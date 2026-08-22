@@ -1,0 +1,70 @@
+"""Typed intermediate representation for 3D CAD product data."""
+
+from cad3d_ir.api import (
+    dump_manifest,
+    dumps_manifest,
+    load_manifest,
+    load_schema,
+    loads_manifest,
+    manifest_dict,
+    validate_package,
+)
+from cad3d_ir.constants import PACKAGE_VERSION as __version__
+from cad3d_ir.diagnostics import ImportDiagnostic, ImportResult
+from cad3d_ir.io import DirectoryResourceWriter, ResourceWriter
+from cad3d_ir.model import (
+    Appearance,
+    BBox3,
+    Body,
+    CadPackage,
+    Configuration,
+    CoordinateSystem,
+    GeometryRepresentation,
+    Material,
+    Occurrence,
+    ProductDefinition,
+    RepresentationDerivation,
+    Resource,
+    RootSelection,
+    SourceDependency,
+    SourceDocument,
+    SourceRef,
+    Transform,
+    UnitSystem,
+)
+from cad3d_ir.validation import IRValidationError, ValidationIssue
+
+__all__ = [
+    "Appearance",
+    "BBox3",
+    "Body",
+    "CadPackage",
+    "Configuration",
+    "CoordinateSystem",
+    "DirectoryResourceWriter",
+    "GeometryRepresentation",
+    "IRValidationError",
+    "ImportDiagnostic",
+    "ImportResult",
+    "Material",
+    "Occurrence",
+    "ProductDefinition",
+    "RepresentationDerivation",
+    "Resource",
+    "ResourceWriter",
+    "RootSelection",
+    "SourceDependency",
+    "SourceDocument",
+    "SourceRef",
+    "Transform",
+    "UnitSystem",
+    "ValidationIssue",
+    "__version__",
+    "dump_manifest",
+    "dumps_manifest",
+    "load_manifest",
+    "load_schema",
+    "loads_manifest",
+    "manifest_dict",
+    "validate_package",
+]

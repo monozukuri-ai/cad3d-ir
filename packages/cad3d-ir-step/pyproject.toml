@@ -1,0 +1,73 @@
+[project]
+name = "cad3d-ir-step"
+version = "0.1.0"
+description = "STEP AP242/XDE reference importer for cad3d-ir"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [
+    { name = "neka-nat", email = "nekanat.stock@gmail.com" },
+]
+keywords = [
+    "3d-cad",
+    "ap242",
+    "open-cascade",
+    "step",
+    "xde",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
+]
+dependencies = [
+    "cad3d-ir>=0.1,<0.2",
+    "cadquery-ocp-novtk>=7.9.3.1,<7.10",
+]
+
+[project.urls]
+Homepage = "https://github.com/monozukuri-ai/cad3d-ir"
+Repository = "https://github.com/monozukuri-ai/cad3d-ir/tree/main/packages/cad3d-ir-step"
+Issues = "https://github.com/monozukuri-ai/cad3d-ir/issues"
+
+[project.scripts]
+cad3d-ir-step = "cad3d_ir_step.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.8.15,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4",
+    "ruff>=0.8",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[tool.uv.sources]
+cad3d-ir = { workspace = true }
+
+[tool.uv.build-backend]
+source-include = [
+    "scripts/**",
+    "tests/**",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

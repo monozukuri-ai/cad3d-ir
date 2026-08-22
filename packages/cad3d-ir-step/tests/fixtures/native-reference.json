@@ -1,0 +1,69 @@
+{
+  "format": "synthetic-native-cad",
+  "version": "1.0",
+  "name": "Reference Assembly",
+  "units": "mm",
+  "root_product_key": "assembly",
+  "products": [
+    {
+      "key": "assembly",
+      "name": "Reference Assembly",
+      "kind": "assembly",
+      "occurrences": [
+        {
+          "key": "plate-1",
+          "name": "Base Plate:1",
+          "product_key": "plate",
+          "translation": [0.0, 0.0, 0.0]
+        },
+        {
+          "key": "pin-pair-1",
+          "name": "Pin Pair:1",
+          "product_key": "pin-pair",
+          "translation": [10.0, 10.0, 2.0]
+        }
+      ]
+    },
+    {
+      "key": "pin-pair",
+      "name": "Pin Pair",
+      "kind": "assembly",
+      "occurrences": [
+        {
+          "key": "pin-1",
+          "name": "Pin:1",
+          "product_key": "pin",
+          "translation": [0.0, 0.0, 0.0]
+        },
+        {
+          "key": "pin-2",
+          "name": "Pin:2",
+          "product_key": "pin",
+          "translation": [20.0, 0.0, 0.0]
+        }
+      ]
+    },
+    {
+      "key": "plate",
+      "name": "Base Plate",
+      "kind": "part",
+      "body": {
+        "name": "Base Plate body",
+        "bounds_min": [0.0, 0.0, 0.0],
+        "bounds_max": [40.0, 20.0, 2.0],
+        "base_color": [0.2, 0.4, 0.8, 1.0]
+      }
+    },
+    {
+      "key": "pin",
+      "name": "Pin",
+      "kind": "part",
+      "body": {
+        "name": "Pin body",
+        "bounds_min": [-2.0, -2.0, 0.0],
+        "bounds_max": [2.0, 2.0, 10.0],
+        "base_color": [0.8, 0.7, 0.2, 1.0]
+      }
+    }
+  ]
+}

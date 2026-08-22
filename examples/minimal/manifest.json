@@ -1,0 +1,65 @@
+{
+  "appearances": [],
+  "bodies": [
+    {
+      "extensions": {},
+      "id": "body-main",
+      "name": "Main body",
+      "properties": {},
+      "representation_ids": []
+    }
+  ],
+  "configurations": [
+    {
+      "body_ids": [
+        "body-main"
+      ],
+      "extensions": {},
+      "id": "configuration-default",
+      "name": "Default",
+      "occurrence_ids": [],
+      "product_id": "product-bracket",
+      "properties": {}
+    }
+  ],
+  "coordinate_system": {
+    "handedness": "right",
+    "matrix_layout": "row-major",
+    "up_axis": "z",
+    "vector_convention": "column"
+  },
+  "extensions": {},
+  "extensions_required": [],
+  "extensions_used": [],
+  "format": "cad3d-ir",
+  "id": "package-minimal",
+  "materials": [],
+  "metadata": {},
+  "name": "Minimal part",
+  "occurrences": [],
+  "product_definitions": [
+    {
+      "default_configuration_id": "configuration-default",
+      "extensions": {},
+      "id": "product-bracket",
+      "kind": "part",
+      "name": "Bracket",
+      "properties": {}
+    }
+  ],
+  "properties": {},
+  "representations": [],
+  "resources": [],
+  "roots": [
+    {
+      "configuration_id": "configuration-default",
+      "product_id": "product-bracket"
+    }
+  ],
+  "source_documents": [],
+  "units": {
+    "angle_unit": "rad",
+    "length_unit": "mm"
+  },
+  "version": "0.1.0"
+}

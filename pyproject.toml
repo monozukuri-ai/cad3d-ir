@@ -1,0 +1,78 @@
+[project]
+name = "cad3d-ir"
+version = "0.1.0"
+description = "Typed intermediate representation for 3D CAD product data"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [
+    { name = "neka-nat", email = "nekanat.stock@gmail.com" },
+]
+keywords = [
+    "3d-cad",
+    "assembly",
+    "brep",
+    "intermediate-representation",
+    "step",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
+]
+dependencies = [
+    "pydantic>=2.10,<3",
+]
+
+[project.urls]
+Homepage = "https://github.com/monozukuri-ai/cad3d-ir"
+Repository = "https://github.com/monozukuri-ai/cad3d-ir"
+Documentation = "https://github.com/monozukuri-ai/cad3d-ir/tree/main/docs"
+Issues = "https://github.com/monozukuri-ai/cad3d-ir/issues"
+
+[project.scripts]
+cad3d-ir = "cad3d_ir.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.8.15,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "jsonschema>=4.23",
+    "pytest>=8.4",
+    "pytest-cov>=6",
+    "ruff>=0.8",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.uv.build-backend]
+source-include = [
+    "docs/**",
+    "examples/**",
+    "schema/**",
+    "scripts/**",
+    "tests/**",
+    "uv.lock",
+]
+
+[tool.uv.workspace]
+members = ["packages/cad3d-ir-step"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

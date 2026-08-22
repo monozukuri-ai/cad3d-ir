@@ -1,0 +1,126 @@
+{
+  "coordinate_system": {
+    "handedness": "right",
+    "matrix_layout": "row-major",
+    "up_axis": "z",
+    "vector_convention": "column"
+  },
+  "name": "Reference Assembly",
+  "products": [
+    {
+      "bodies": [
+        {
+          "base_color": [0.2, 0.4, 0.8, 1.0],
+          "name": "Base Plate body",
+          "representation": {
+            "bounds": {
+              "max": [40.0, 20.0, 2.0],
+              "min": [0.0, 0.0, 0.0]
+            },
+            "fidelity": "exact",
+            "kind": "brep",
+            "role": "design"
+          }
+        }
+      ],
+      "configuration": "Default",
+      "kind": "part",
+      "name": "Base Plate",
+      "occurrences": []
+    },
+    {
+      "bodies": [
+        {
+          "base_color": [0.8, 0.7, 0.2, 1.0],
+          "name": "Pin body",
+          "representation": {
+            "bounds": {
+              "max": [2.0, 2.0, 10.0],
+              "min": [-2.0, -2.0, 0.0]
+            },
+            "fidelity": "exact",
+            "kind": "brep",
+            "role": "design"
+          }
+        }
+      ],
+      "configuration": "Default",
+      "kind": "part",
+      "name": "Pin",
+      "occurrences": []
+    },
+    {
+      "bodies": [],
+      "configuration": "Default",
+      "kind": "assembly",
+      "name": "Pin Pair",
+      "occurrences": [
+        {
+          "configuration": "Default",
+          "name": "Pin:1",
+          "product": "Pin",
+          "suppressed": null,
+          "transform": [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0]
+          ],
+          "visible": true
+        },
+        {
+          "configuration": "Default",
+          "name": "Pin:2",
+          "product": "Pin",
+          "suppressed": null,
+          "transform": [
+            [1.0, 0.0, 0.0, 20.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0]
+          ],
+          "visible": true
+        }
+      ]
+    },
+    {
+      "bodies": [],
+      "configuration": "Default",
+      "kind": "assembly",
+      "name": "Reference Assembly",
+      "occurrences": [
+        {
+          "configuration": "Default",
+          "name": "Base Plate:1",
+          "product": "Base Plate",
+          "suppressed": null,
+          "transform": [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0]
+          ],
+          "visible": true
+        },
+        {
+          "configuration": "Default",
+          "name": "Pin Pair:1",
+          "product": "Pin Pair",
+          "suppressed": null,
+          "transform": [
+            [1.0, 0.0, 0.0, 10.0],
+            [0.0, 1.0, 0.0, 10.0],
+            [0.0, 0.0, 1.0, 2.0],
+            [0.0, 0.0, 0.0, 1.0]
+          ],
+          "visible": true
+        }
+      ]
+    }
+  ],
+  "roots": ["Reference Assembly"],
+  "units": {
+    "angle_unit": "rad",
+    "length_unit": "mm"
+  }
+}
