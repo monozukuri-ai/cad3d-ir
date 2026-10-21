@@ -10,7 +10,8 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from cad3d_ir.io import load_manifest
+from cad3d_ir.importers import ImportOptions, MeshImporter, MeshImportError
+from cad3d_ir.io import DirectoryResourceWriter, dump_manifest, load_manifest
 from cad3d_ir.schema import load_schema
 from cad3d_ir.validation import IRValidationError, validate_resources
 
@@ -43,6 +44,23 @@ def _build_parser() -> argparse.ArgumentParser:
         help="print or write the bundled canonical JSON Schema",
     )
     schema_parser.add_argument("-o", "--output", type=Path)
+
+    import_parser = subparsers.add_parser(
+        "import",
+        help="convert an STL or OBJ mesh file to a package directory",
+    )
+    import_parser.add_argument("source", type=Path, help="input .stl or .obj file")
+    import_parser.add_argument("output", type=Path, help="output package directory")
+    import_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="replace an existing manifest and geometry resources",
+    )
+    import_parser.add_argument(
+        "--diagnostics",
+        type=Path,
+        help="write structured import diagnostics as JSON",
+    )
     return parser
 
 
@@ -54,6 +72,44 @@ def _run_validate(args: argparse.Namespace) -> int:
     if resource_root is not None:
         validate_resources(package, resource_root)
     print(f"valid {package.format} {package.version}: {package.id}")
+    return 0
+
+
+def _run_import(args: argparse.Namespace) -> int:
+    manifest_path = args.output / "manifest.json"
+    if manifest_path.exists() and not args.overwrite:
+        print(f"error: manifest already exists: {manifest_path}", file=sys.stderr)
+        return 2
+    result = MeshImporter().import_file(
+        args.source,
+        options=ImportOptions(),
+        resources=DirectoryResourceWriter(args.output, overwrite=args.overwrite),
+    )
+    dump_manifest(result.package, manifest_path, pretty=True)
+    if args.diagnostics is not None:
+        args.diagnostics.parent.mkdir(parents=True, exist_ok=True)
+        args.diagnostics.write_text(
+            json.dumps(
+                {
+                    "diagnostics": [item.as_dict() for item in result.diagnostics],
+                    "statistics": result.statistics,
+                },
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+    warning_count = sum(
+        item.severity in {"warning", "error"} for item in result.diagnostics
+    )
+    print(
+        f"wrote {manifest_path}: {result.statistics['triangles']} triangles, "
+        f"{result.statistics['line_segments']} line segments, "
+        f"{warning_count} warnings"
+    )
     return 0
 
 
@@ -84,7 +140,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_validate(args)
         if args.command == "schema":
             return _run_schema(args)
-    except (IRValidationError, ValidationError, OSError, UnicodeError) as exc:
+        if args.command == "import":
+            return _run_import(args)
+    except (
+        IRValidationError,
+        MeshImportError,
+        ValidationError,
+        OSError,
+        UnicodeError,
+    ) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 

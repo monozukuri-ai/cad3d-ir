@@ -78,6 +78,12 @@ but do not become core dependencies. Portable exchange profiles can require a
 standard B-Rep resource while local profiles can additionally use a faster
 kernel-native resource.
 
+A package may additionally list `visualizations`: derived, display-only
+assets (glTF binary) that pack every placed body of a package or configuration
+into one renderable resource. They exist so a viewer does not need to resolve
+the product graph, and they never replace design geometry; their derivation
+and statistics are recorded like any other derived representation.
+
 Topology references are scoped to a geometry representation and its resource
 digest. A local face or edge identifier is not promised to survive re-import,
 healing, or a kernel-version change unless the source adapter provides a
@@ -142,7 +148,9 @@ JSON object keys are canonicalized. Binary resources are addressed by digest.
 
 Schema `0.1.x` covers the multi-document product graph, resolved
 configurations, occurrences, bodies, geometry resources, basic material and
-appearance assignments, provenance, and extensions.
+appearance assignments, provenance, and extensions. Schema `0.2.x` adds
+package-level visualizations (display meshes) without changing existing
+meaning.
 
 PMI/GD&T follows only after the topology-reference contract has real STEP and
 native-CAD fixtures. Feature history, sketches, constraints, and assembly mates

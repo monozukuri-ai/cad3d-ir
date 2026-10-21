@@ -1,7 +1,7 @@
 [project]
 name = "cad3d-ir-step"
-version = "0.1.0"
-description = "STEP AP242/XDE reference importer for cad3d-ir"
+version = "0.2.0"
+description = "STEP and IGES importers for cad3d-ir through Open CASCADE XDE"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -12,6 +12,8 @@ authors = [
 keywords = [
     "3d-cad",
     "ap242",
+    "gltf",
+    "iges",
     "open-cascade",
     "step",
     "xde",
@@ -30,7 +32,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "cad3d-ir>=0.1,<0.2",
+    "cad3d-ir>=0.2,<0.3",
     "cadquery-ocp-novtk>=7.9.3.1,<7.10",
 ]
 

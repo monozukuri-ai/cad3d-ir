@@ -11,20 +11,39 @@ from pathlib import Path
 from cad3d_ir import DirectoryResourceWriter, dump_manifest
 from cad3d_ir.importers import ImportOptions
 
-from cad3d_ir_step import StepImporter, StepImportError
+from cad3d_ir_step import IgesImporter, StepImporter, StepImportError
 
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="cad3d-ir-step",
-        description="Convert STEP AP242 product data to a cad3d-ir package directory.",
+        description=(
+            "Convert STEP (AP203/AP214/AP242) or IGES product data to a cad3d-ir "
+            "package directory."
+        ),
     )
-    parser.add_argument("source", type=Path, help="input STEP AP242 Part 21 file")
+    parser.add_argument("source", type=Path, help="input STEP Part 21 or IGES file")
     parser.add_argument("output", type=Path, help="output package directory")
     parser.add_argument(
-        "--allow-non-ap242",
+        "--require-ap242",
         action="store_true",
-        help="allow other STEP schemas and emit a diagnostic",
+        help="reject STEP schemas other than AP242 before transferring geometry",
+    )
+    parser.add_argument(
+        "--mesh",
+        action="store_true",
+        help="also write display meshes (per-body GLB and a package GLB)",
+    )
+    parser.add_argument(
+        "--no-brep",
+        action="store_true",
+        help="do not write exact OCCT B-Rep resources",
+    )
+    parser.add_argument(
+        "--deflection-ratio",
+        type=float,
+        default=0.001,
+        help="mesh linear deflection as a ratio of the root diagonal (default 0.001)",
     )
     parser.add_argument(
         "--overwrite",
@@ -39,8 +58,16 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _select_importer(source: Path, *, require_ap242: bool):
+    iges = IgesImporter()
+    step = StepImporter(require_ap242=require_ap242)
+    if iges.probe(source) > step.probe(source):
+        return iges
+    return step
+
+
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run the STEP adapter CLI."""
+    """Run the STEP/IGES adapter CLI."""
     args = _parser().parse_args(argv)
     manifest_path = args.output / "manifest.json"
     if manifest_path.exists() and not args.overwrite:
@@ -48,9 +75,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
 
     try:
-        result = StepImporter().import_file(
+        importer = _select_importer(args.source, require_ap242=args.require_ap242)
+        result = importer.import_file(
             args.source,
-            options=ImportOptions(strict=not args.allow_non_ap242),
+            options=ImportOptions(
+                include_visualization_mesh=args.mesh,
+                include_brep=not args.no_brep,
+                mesh_linear_deflection_ratio=args.deflection_ratio,
+            ),
             resources=DirectoryResourceWriter(
                 args.output,
                 overwrite=args.overwrite,

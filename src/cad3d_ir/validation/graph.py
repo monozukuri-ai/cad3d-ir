@@ -77,6 +77,7 @@ def validate_graph(package: CadPackage) -> None:
         ("resources", package.resources),
         ("materials", package.materials),
         ("appearances", package.appearances),
+        ("visualizations", package.visualizations),
     ]
 
     id_locations: dict[str, str] = {package.id: "id"}
@@ -327,6 +328,44 @@ def validate_graph(package: CadPackage) -> None:
                 )
             )
         derivation = representation.derivation
+        if derivation is not None:
+            _validate_source_ref(
+                issues,
+                derivation.source,
+                source_document_ids,
+                f"{path}.derivation",
+            )
+            source_id = derivation.source_representation_id
+            if source_id is not None and source_id not in representations:
+                issues.append(
+                    ValidationIssue(
+                        code="DANGLING_REPRESENTATION_REFERENCE",
+                        path=f"{path}.derivation.source_representation_id",
+                        message=f"unknown representation {source_id!r}",
+                    )
+                )
+
+    for visualization_index, visualization in enumerate(package.visualizations):
+        path = f"visualizations[{visualization_index}]"
+        _validate_source_ref(issues, visualization.source, source_document_ids, path)
+        if visualization.resource_id not in resources:
+            issues.append(
+                ValidationIssue(
+                    code="DANGLING_RESOURCE_REFERENCE",
+                    path=f"{path}.resource_id",
+                    message=f"unknown resource {visualization.resource_id!r}",
+                )
+            )
+        configuration_id = visualization.configuration_id
+        if configuration_id is not None and configuration_id not in configurations:
+            issues.append(
+                ValidationIssue(
+                    code="DANGLING_CONFIGURATION_REFERENCE",
+                    path=f"{path}.configuration_id",
+                    message=f"unknown configuration {configuration_id!r}",
+                )
+            )
+        derivation = visualization.derivation
         if derivation is not None:
             _validate_source_ref(
                 issues,

@@ -1,11 +1,11 @@
-"""Bodies, representations, binary resources, and visual assignments."""
+"""Bodies, representations, resources, visualizations, and visual assignments."""
 
 from __future__ import annotations
 
 from pathlib import PurePosixPath
 from typing import Annotated, Literal, TypeAlias
 
-from pydantic import Field, JsonValue, field_validator
+from pydantic import Field, JsonValue, field_validator, model_validator
 
 from cad3d_ir.model.common import (
     BBox3,
@@ -111,3 +111,34 @@ class Appearance(IRObject):
 
     base_color: ColorRGBA | None = None
     double_sided: bool | None = None
+
+
+class Visualization(IRObject):
+    """A derived, display-only asset that covers a whole package or configuration.
+
+    Unlike a :class:`GeometryRepresentation`, a visualization is not owned by one
+    body: it packs every placed body of its scope into one renderable resource
+    (currently glTF binary) so a viewer can show the product without resolving
+    the product graph itself. It never replaces design geometry.
+    """
+
+    kind: Literal["glb"]
+    scope: Literal["package", "configuration"] = "package"
+    configuration_id: Identifier | None = None
+    resource_id: Identifier
+    units: UnitSystem | None = None
+    bounds: BBox3 | None = None
+    derivation: RepresentationDerivation | None = None
+    statistics: dict[str, int] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validate_scope(self) -> Visualization:
+        if self.scope == "configuration" and self.configuration_id is None:
+            raise ValueError(
+                "configuration-scoped visualizations need configuration_id"
+            )
+        if self.scope == "package" and self.configuration_id is not None:
+            raise ValueError(
+                "package-scoped visualizations must not set configuration_id"
+            )
+        return self

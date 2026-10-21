@@ -16,6 +16,7 @@ from cad3d_ir.model.geometry import (
     Material,
     RepresentationDerivation,
     Resource,
+    Visualization,
 )
 from cad3d_ir.model.package import CadPackage
 from cad3d_ir.model.product import (
@@ -47,4 +48,5 @@ __all__ = [
     "SourceRef",
     "Transform",
     "UnitSystem",
+    "Visualization",
 ]

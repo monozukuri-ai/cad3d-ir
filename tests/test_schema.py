@@ -21,7 +21,7 @@ def test_public_and_packaged_schema_match() -> None:
     public = json.loads(Path("schema/cad3d-ir.schema.json").read_text(encoding="utf-8"))
 
     assert load_schema() == public
-    assert public["$id"].endswith(":0.1.0")
+    assert public["$id"].endswith(":0.2.0")
     assert set(public["required"]) >= {
         "format",
         "version",

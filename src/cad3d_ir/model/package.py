@@ -18,6 +18,7 @@ from cad3d_ir.model.geometry import (
     GeometryRepresentation,
     Material,
     Resource,
+    Visualization,
 )
 from cad3d_ir.model.product import (
     Configuration,
@@ -56,6 +57,7 @@ class CadPackage(ExtensibleModel):
     resources: list[Resource] = Field(default_factory=list)
     materials: list[Material] = Field(default_factory=list)
     appearances: list[Appearance] = Field(default_factory=list)
+    visualizations: list[Visualization] = Field(default_factory=list)
     roots: list[RootSelection] = Field(default_factory=list)
 
     extensions_used: list[ExtensionName] = Field(default_factory=list)

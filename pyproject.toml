@@ -1,6 +1,6 @@
 [project]
 name = "cad3d-ir"
-version = "0.1.0"
+version = "0.2.0"
 description = "Typed intermediate representation for 3D CAD product data"
 readme = "README.md"
 license = "MIT"

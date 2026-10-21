@@ -31,6 +31,7 @@ from cad3d_ir.model import (
     SourceRef,
     Transform,
     UnitSystem,
+    Visualization,
 )
 from cad3d_ir.validation import IRValidationError, ValidationIssue
 
@@ -59,6 +60,7 @@ __all__ = [
     "Transform",
     "UnitSystem",
     "ValidationIssue",
+    "Visualization",
     "__version__",
     "dump_manifest",
     "dumps_manifest",

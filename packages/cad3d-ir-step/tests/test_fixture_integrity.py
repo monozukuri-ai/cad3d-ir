@@ -15,6 +15,12 @@ _EXPECTED_HASHES = {
     "expected-semantics.json": (
         "0a92ea6da6d69ad16263cfc8fe72ed6159c15133ad8949d693425b7f9fc397f8"
     ),
+    "reference-assembly-ap214.step": (
+        "7a27402de9b51f56fe04453c4d80367d730a8549abc02af1056b4dcf8cfba299"
+    ),
+    "reference-assembly.iges": (
+        "c474d4a450701913d9e31a9583257e712ae57ead0ef19100d6f5ae87969eae6b"
+    ),
 }
 
 

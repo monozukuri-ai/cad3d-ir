@@ -15,19 +15,51 @@ adapter packages.
 
 ## Status
 
-The `0.1.0` foundation provides:
+The `0.2.0` core provides:
 
-- typed Pydantic models and a generated JSON Schema;
+- typed Pydantic models and a generated JSON Schema (IR `0.2.0`);
 - graph validation for IDs and cross-object references;
 - deterministic manifest JSON serialization;
 - atomic, content-addressed directory resource writing;
 - optional resource size and SHA-256 validation;
 - structured importer diagnostics and a format-adapter protocol;
-- a `cad3d-ir validate` CLI.
+- package-level `visualizations`: derived, display-only glTF binary assets
+  that pack every placed body so a viewer needs no product-graph logic;
+- `cad3d_ir.mesh`: a dependency-free glTF binary (GLB) writer, validator and
+  triangle helpers shared by adapters;
+- a built-in `MeshImporter` for STL (ASCII/binary) and Wavefront OBJ;
+- `cad3d-ir validate`, `cad3d-ir schema` and `cad3d-ir import` CLIs.
 
-No CAD format importer is included in the core distribution. This repository's
-independently packaged `cad3d-ir-step` workspace member provides the STEP
-AP242/XDE reference adapter and abstraction fixture.
+Kernel-backed importers stay separate. This repository's `cad3d-ir-step`
+workspace member reads STEP (AP203/AP214/AP242) and IGES through Open CASCADE
+XDE and can emit the same visualization meshes.
+
+## Visualization meshes
+
+Adapters write display geometry on request:
+
+```python
+from pathlib import Path
+
+from cad3d_ir import DirectoryResourceWriter
+from cad3d_ir.importers import ImportOptions, MeshImporter
+
+result = MeshImporter().import_file(
+    Path("part.stl"),
+    options=ImportOptions(),
+    resources=DirectoryResourceWriter("converted"),
+)
+preview = result.package.visualizations[0]  # kind="glb", scope="package"
+print(preview.statistics["triangles"], preview.resource_id)
+```
+
+The GLB is self-contained: positions, optional normals and `uint32` indices in
+one buffer. Node `0` carries the single conversion from package units and Z-up
+to glTF metres and Y-up (`extras.cad3d_ir.length_unit_to_m`), so every other
+node and mesh stays in package coordinates. Each node's `extras.id` is the IR
+occurrence (or root product) id, each mesh's `extras.id` the body id, and
+face/edge primitives list `[pick_id, first_index, index_count]` ranges in
+`extras.ranges`, so viewers can map a picked triangle back to a face.
 
 ## Development
 

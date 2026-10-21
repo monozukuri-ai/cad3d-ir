@@ -19,8 +19,33 @@ resource. STEP source units are normalized explicitly to package millimetres.
 
 PMI/GD&T, presentation layers, and physical materials are detected but not yet
 mapped. Their presence produces structured loss diagnostics instead of being
-silently discarded. Configuration synthesis and requested-but-unavailable mesh
-generation are also explicit diagnostics.
+silently discarded. Configuration synthesis is also an explicit diagnostic.
+
+## IGES through the same mapping
+
+`IgesImporter` transfers IGES 5.x files with `IGESCAFControl_Reader` into the
+same XDE document shape and reuses the STEP mapping. IGES files rarely carry
+assembly structure, names or colours, so the resulting packages are usually a
+flat list of parts; the units declared in the global section are reported in
+`source_length_units` and normalized to package millimetres by OCCT.
+
+## Display meshes
+
+With `ImportOptions(include_visualization_mesh=True)` the adapter tessellates
+every leaf definition once (`BRepMesh_IncrementalMesh`, linear deflection as a
+ratio of the root bounding-box diagonal, parallel) and writes:
+
+- one `mesh` representation per body (`role="visualization"`,
+  `fidelity="derived"`, `derivation.relation="tessellated"`, with the B-Rep
+  representation as `source_representation_id` when B-Rep is written); and
+- one package `Visualization` whose GLB node tree mirrors the XDE occurrence
+  tree. Occurrences of one definition reference the same glTF mesh, each node
+  carries the IR occurrence id in `extras.id`, and every face and edge keeps a
+  pick range so a viewer can resolve a picked triangle or segment back to the
+  OCCT sub-shape index of that tessellation.
+
+The GLB writer lives in the core (`cad3d_ir.mesh`) so that mesh-only importers
+and future native-format adapters produce byte-compatible assets.
 
 ## First abstraction fixture
 

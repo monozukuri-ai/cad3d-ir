@@ -6,11 +6,11 @@ class StepImportError(ValueError):
 
 
 class StepReadError(StepImportError):
-    """Raised when OCCT cannot read or transfer a STEP document."""
+    """Raised when OCCT cannot read or transfer a STEP or IGES document."""
 
 
 class UnsupportedStepSchemaError(StepImportError):
-    """Raised when strict mode receives a non-AP242 STEP schema."""
+    """Raised when AP242 was required but another STEP schema was found."""
 
 
 class UnsupportedIRVersionError(StepImportError):
