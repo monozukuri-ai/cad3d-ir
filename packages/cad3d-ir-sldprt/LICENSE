@@ -1,0 +1,30 @@
+cad3d-ir-sldprt License Notice
+
+Licensor and commercial contracting entity: UnRobotics Inc.
+https://www.un-robotics.com/
+
+cad3d-ir-sldprt is available under the PolyForm Noncommercial License 1.0.0,
+unless you have a separate written commercial agreement with UnRobotics Inc.
+The package follows the licensing of sldkit, the SolidWorks reader it depends
+on (https://github.com/monozukuri-ai/sldkit).
+
+The unmodified PolyForm terms are in:
+  LICENSES/PolyForm-Noncommercial-1.0.0.md
+  https://polyformproject.org/licenses/noncommercial/1.0.0
+
+For use outside those permissions, including commercial internal use and
+commercial product integration, contact:
+  https://www.un-robotics.com/#contact
+sldkit's COMMERCIAL-LICENSE.md describes the available arrangements; it does
+not itself grant a license.
+
+This notice covers only the cad3d-ir-sldprt package directory
+(packages/cad3d-ir-sldprt in the cad3d-ir repository). The cad3d-ir core and
+the cad3d-ir-step adapter in the same repository are MIT licensed and are not
+affected by it. Dependencies (cad3d-ir, sldkit, pydantic) and third-party
+material retain their own licenses and notices. Copyright ownership remains
+with the respective holders; identifying the licensor here does not transfer
+ownership to UnRobotics Inc.
+
+Required Notice: cad3d-ir-sldprt is licensed by UnRobotics Inc. (https://www.un-robotics.com/).
+Required Notice: cad3d-ir-sldprt is offered under PolyForm Noncommercial 1.0.0; separate commercial licenses are available.

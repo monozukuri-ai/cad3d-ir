@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.2.1 — 2026-10-23
+
+### cad3d-ir (core, IR schema 0.2.0)
+
+- `GlbBuilder.add_triangles` and `add_lines` accept packed little-endian
+  buffers (`bytes`, `bytearray`, `memoryview`, `array.array`): `float32`
+  triples for positions and normals, `uint32` for indices. Buffers are written
+  without being expanded into Python objects; sequences still work and produce
+  identical GLB bytes.
+- `GlbBuilder.add_vertices` registers a vertex set that several primitives
+  share through `vertices=`, so face groups and edge outlines of one body no
+  longer duplicate positions. Shared vertices count once towards
+  `vertex_count` and `bounds`.
+- Index validation now reports negative indices as missing vertices for
+  sequences and buffers alike.
+
+### cad3d-ir-sldprt (new, 0.2.1)
+
+- SOLIDWORKS part importer through sldkit 0.3: the saved display meshes become
+  one GLB (shared vertex set, one TRIANGLES primitive per saved colour with
+  per-face-table pick ranges, face outlines as LINES) with the STEP adapter's
+  node and unit conventions. Document metadata (internal version, estimated
+  release year, configuration names, custom properties, units) and the saved
+  preview image (PNG, or DIB with a BMP header) are carried as source
+  properties and a resource.
+- Diagnostics are prefixed `SLDPRT_*`; the B-Rep is never read
+  (`SLDPRT_DISPLAY_MESH_ONLY`), documents without display data keep metadata
+  and preview (`SLDPRT_PREVIEW_ONLY` / `SLDPRT_NO_DISPLAY_DATA`), assemblies are
+  opt-in and flagged, drawings are rejected.
+- Licensed under PolyForm Noncommercial 1.0.0 by UnRobotics Inc., following
+  sldkit; the core and `cad3d-ir-step` stay MIT.
+
 ## 0.2.0 — 2026-10-21
 
 ### cad3d-ir (core, IR schema 0.2.0)

@@ -15,7 +15,7 @@ adapter packages.
 
 ## Status
 
-The `0.2.0` core provides:
+The `0.2.1` core provides:
 
 - typed Pydantic models and a generated JSON Schema (IR `0.2.0`);
 - graph validation for IDs and cross-object references;
@@ -26,13 +26,20 @@ The `0.2.0` core provides:
 - package-level `visualizations`: derived, display-only glTF binary assets
   that pack every placed body so a viewer needs no product-graph logic;
 - `cad3d_ir.mesh`: a dependency-free glTF binary (GLB) writer, validator and
-  triangle helpers shared by adapters;
+  triangle helpers shared by adapters. The writer takes flat sequences or
+  packed little-endian buffers and can share one vertex set between
+  primitives;
 - a built-in `MeshImporter` for STL (ASCII/binary) and Wavefront OBJ;
 - `cad3d-ir validate`, `cad3d-ir schema` and `cad3d-ir import` CLIs.
 
-Kernel-backed importers stay separate. This repository's `cad3d-ir-step`
-workspace member reads STEP (AP203/AP214/AP242) and IGES through Open CASCADE
-XDE and can emit the same visualization meshes.
+Kernel-backed and native-format importers stay separate. This repository's
+`cad3d-ir-step` workspace member reads STEP (AP203/AP214/AP242) and IGES
+through Open CASCADE XDE and can emit the same visualization meshes. The
+`cad3d-ir-sldprt` member reads SOLIDWORKS parts through
+[sldkit](https://github.com/monozukuri-ai/sldkit): it packs the display
+meshes SOLIDWORKS saved into the same GLB layout, without reading the B-Rep,
+and carries the document metadata and preview image. It is licensed
+separately (PolyForm Noncommercial, see its README).
 
 ## Visualization meshes
 
@@ -72,6 +79,10 @@ uv run python scripts/sync_schema.py --check
 # STEP adapter
 uv run --package cad3d-ir-step pytest packages/cad3d-ir-step/tests
 uv run --package cad3d-ir-step cad3d-ir-step model.step output/
+
+# SOLIDWORKS part adapter
+uv run --package cad3d-ir-sldprt pytest packages/cad3d-ir-sldprt/tests
+uv run --package cad3d-ir-sldprt cad3d-ir-sldprt part.SLDPRT output/
 ```
 
 ## Minimal use
@@ -105,4 +116,8 @@ and abstraction gate are described in
 
 ## License
 
-MIT
+`cad3d-ir` and `cad3d-ir-step` are MIT licensed. `packages/cad3d-ir-sldprt`
+is licensed separately under the PolyForm Noncommercial License 1.0.0 by
+UnRobotics Inc., following sldkit; see
+[its LICENSE](packages/cad3d-ir-sldprt/LICENSE) for the notice and
+commercial contact.

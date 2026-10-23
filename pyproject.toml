@@ -1,6 +1,6 @@
 [project]
 name = "cad3d-ir"
-version = "0.2.0"
+version = "0.2.1"
 description = "Typed intermediate representation for 3D CAD product data"
 readme = "README.md"
 license = "MIT"
@@ -68,7 +68,7 @@ source-include = [
 ]
 
 [tool.uv.workspace]
-members = ["packages/cad3d-ir-step"]
+members = ["packages/cad3d-ir-step", "packages/cad3d-ir-sldprt"]
 
 [tool.ruff]
 target-version = "py310"

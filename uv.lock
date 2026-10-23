@@ -10,6 +10,7 @@ resolution-markers = [
 [manifest]
 members = [
     "cad3d-ir",
+    "cad3d-ir-sldprt",
     "cad3d-ir-step",
 ]
 
@@ -33,7 +34,7 @@ wheels = [
 
 [[package]]
 name = "cad3d-ir"
-version = "0.2.0"
+version = "0.2.1"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
@@ -56,6 +57,35 @@ dev = [
     { name = "pytest", specifier = ">=8.4" },
     { name = "pytest-cov", specifier = ">=6" },
     { name = "ruff", specifier = ">=0.8" },
+]
+
+[[package]]
+name = "cad3d-ir-sldprt"
+version = "0.2.1"
+source = { editable = "packages/cad3d-ir-sldprt" }
+dependencies = [
+    { name = "cad3d-ir" },
+    { name = "sldkit" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "ruff" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cad3d-ir", editable = "." },
+    { name = "sldkit", specifier = ">=0.3.0,<0.4" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.4" },
+    { name = "ruff", specifier = ">=0.8" },
+    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0" },
 ]
 
 [[package]]
@@ -801,6 +831,17 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/aa/28/0c6dd865859c6d17bc8ccc34cb72b0e02d6c7eb25e8a1e22b5bea681e2c0/ruff-0.16.4-py3-none-win32.whl", hash = "sha256:312769988007aaeb8e189b443ccdd03c0e6374489e053467be6d96518ebff76e", size = 10021687, upload-time = "2026-08-20T17:43:52.281Z" },
     { url = "https://files.pythonhosted.org/packages/a3/03/e724450f621698117f9aa6dd241c94d0274ae96781378dc86745ae29f0e7/ruff-0.16.4-py3-none-win_amd64.whl", hash = "sha256:05d9d27a18c4bcbefada602480ec9e01e0bc949d432e0ced5df77edac195919c", size = 10567657, upload-time = "2026-08-20T17:43:54.78Z" },
     { url = "https://files.pythonhosted.org/packages/0e/fe/da8b9e1347696bb22120b77280ec5ce25d500ca5cb39d5ad6e5c18de19c1/ruff-0.16.4-py3-none-win_arm64.whl", hash = "sha256:a3a61621c9b6f6a89573e938a080e648f1695baa3f58570a3a707bc51ff65a21", size = 10451579, upload-time = "2026-08-20T17:43:57.135Z" },
+]
+
+[[package]]
+name = "sldkit"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/56/54/04c0398c0a7e82d4f0639f79c6a9e688e5e463edffdbba63518942cd0f67/sldkit-0.3.0.tar.gz", hash = "sha256:9751dde60a733bd0a51624a5ae5a74158bbf1978bfb5fb44452bd51808b23f5a", size = 1708884, upload-time = "2026-10-23T10:53:25.925Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/51/1b/658e62fecb51ebfdb99b0fff692e8309aeb4dac5b53402ec2743e1d14f02/sldkit-0.3.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:9bf70abf2cad3684a448e3c3ca50dbe8f78019525f1da47853d881a7115ff691", size = 6375168, upload-time = "2026-10-23T10:53:20.327Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/8f/290c0ba1fd16ab0f747faedcfd01192734d8665b43f034b7d6981b911094/sldkit-0.3.0-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:406f2a2ceac934d5e96fbe5d2a22f3efea84462035b995448f0b7722d615a288", size = 7273915, upload-time = "2026-10-23T10:53:22.314Z" },
+    { url = "https://files.pythonhosted.org/packages/3c/8a/00ede758181c38783270f9a5560c650c54a7ff498b5154fbac187b46bc08/sldkit-0.3.0-cp310-abi3-win_amd64.whl", hash = "sha256:f2d1b653350987daa370157c12c5e721f250abab7f3bd4125a4773cb75157b96", size = 6387455, upload-time = "2026-10-23T10:53:24.442Z" },
 ]
 
 [[package]]

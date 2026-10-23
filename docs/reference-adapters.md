@@ -47,6 +47,32 @@ ratio of the root bounding-box diagonal, parallel) and writes:
 The GLB writer lives in the core (`cad3d_ir.mesh`) so that mesh-only importers
 and future native-format adapters produce byte-compatible assets.
 
+## SOLIDWORKS parts through sldkit display meshes
+
+`cad3d-ir-sldprt` is the first native-format adapter. It depends on `sldkit`
+and does not read the Parasolid B-Rep: the geometry is the tessellation that
+SOLIDWORKS saved for its own display, returned by
+`sldkit.decode_display_mesh_file` as packed `float32`/`uint32` buffers, which
+the adapter hands to `GlbBuilder` unchanged. One shared vertex set carries the
+positions and normals; one TRIANGLES primitive per saved colour lists
+`[pick_id, first_index, index_count]` per face table in `extras.ranges`; one
+LINES primitive holds the face outlines. Node `0` performs the same unit and
+up-axis conversion as the STEP adapter, so a part and the STEP exported from
+it coincide in a viewer.
+
+The package is deliberately shallow: one source document with the internal
+version, configuration names, custom properties and units from sldkit's
+metadata parse; one part with one configuration; one body with a
+`visualization` mesh representation and a body appearance when a colour was
+saved; the saved preview image as a resource. Configurations are not
+resolved (several mesh-bearing display streams are flagged), assemblies are
+accepted only on request and flagged, drawings are rejected. Documents without
+readable display data (older OLE2 `__Zip` streams) keep the metadata and the
+preview image with a `SLDPRT_PREVIEW_ONLY` warning.
+
+Its tests build SolidWorks documents in memory with the frame and table
+grammar sldkit's tests use, so the repository ships no CAD file.
+
 ## First abstraction fixture
 
 The repository-owned AP242 fixture contains a root assembly, a base plate, and

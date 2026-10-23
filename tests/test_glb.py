@@ -206,3 +206,128 @@ def test_validator_reports_corruption() -> None:
     assert not report.valid
     assert "GLB magic is invalid" in report.errors
     assert not validate_glb_bytes(b"glTF").valid
+
+
+def test_builder_accepts_packed_buffers_and_shared_vertex_sets() -> None:
+    from array import array
+
+    normals = vertex_normals(_UNIT_SQUARE, _TWO_TRIANGLES)
+    edges = [0, 1, 1, 2, 2, 3, 3, 0]
+
+    def build(packed: bool) -> bytes:
+        builder = GlbBuilder(generator="test", root_name="shared")
+        faces = builder.add_material("faces", (0.2, 0.5, 0.8, 1.0))
+        lines = builder.add_material("edges", (0.0, 0.0, 0.0, 1.0), unlit=True)
+        mesh = builder.add_mesh("square", extras={"id": "body-square"})
+        if packed:
+            vertices = builder.add_vertices(
+                positions=struct.pack("<12f", *_UNIT_SQUARE),
+                normals=memoryview(struct.pack("<12f", *normals)),
+            )
+            builder.add_triangles(
+                mesh,
+                vertices=vertices,
+                indices=bytearray(struct.pack("<3I", *_TWO_TRIANGLES[:3])),
+                material=faces,
+                extras={"entityKind": "face", "ranges": [[1, 0, 3]]},
+            )
+            builder.add_triangles(
+                mesh,
+                vertices=vertices,
+                indices=array("I", _TWO_TRIANGLES[3:]),
+                material=faces,
+                extras={"entityKind": "face", "ranges": [[2, 0, 3]]},
+            )
+            builder.add_lines(
+                mesh,
+                vertices=vertices,
+                indices=struct.pack("<8I", *edges),
+                material=lines,
+                extras={"entityKind": "edge", "ranges": [[1, 0, 8]]},
+            )
+        else:
+            vertices = builder.add_vertices(positions=_UNIT_SQUARE, normals=normals)
+            builder.add_triangles(
+                mesh,
+                vertices=vertices,
+                indices=_TWO_TRIANGLES[:3],
+                material=faces,
+                extras={"entityKind": "face", "ranges": [[1, 0, 3]]},
+            )
+            builder.add_triangles(
+                mesh,
+                vertices=vertices,
+                indices=_TWO_TRIANGLES[3:],
+                material=faces,
+                extras={"entityKind": "face", "ranges": [[2, 0, 3]]},
+            )
+            builder.add_lines(
+                mesh,
+                vertices=vertices,
+                indices=edges,
+                material=lines,
+                extras={"entityKind": "edge", "ranges": [[1, 0, 8]]},
+            )
+        builder.add_node("square", mesh=mesh, extras={"id": "product-square"})
+        assert builder.vertex_count == 4
+        assert builder.triangle_count == 2
+        assert builder.line_segment_count == 4
+        assert builder.bounds == ((0.0, 0.0, 0.0), (1.0, 1.0, 0.0))
+        return builder.build()
+
+    payload = build(packed=True)
+    assert payload == build(packed=False)
+    report = validate_glb_bytes(payload)
+    assert report.valid, report.errors
+    assert (report.triangle_count, report.line_segment_count) == (2, 4)
+    document = _json_chunk(payload)
+    primitives = document["meshes"][0]["primitives"]
+    # One POSITION and one NORMAL accessor are shared by all three primitives.
+    assert {primitive["attributes"]["POSITION"] for primitive in primitives} == {0}
+    assert {primitive["attributes"].get("NORMAL") for primitive in primitives} == {
+        1,
+        None,
+    }
+    assert len(document["accessors"]) == 5
+    assert document["accessors"][0]["count"] == 4
+    assert document["accessors"][0]["min"] == [0.0, 0.0, 0.0]
+
+
+def test_packed_buffer_input_is_validated() -> None:
+    from array import array
+
+    builder = GlbBuilder()
+    mesh = builder.add_mesh("mesh")
+    square = struct.pack("<12f", *_UNIT_SQUARE)
+    with pytest.raises(ValueError, match="whole float32"):
+        builder.add_vertices(positions=square[:-1])
+    with pytest.raises(ValueError, match="complete 3D points"):
+        builder.add_vertices(positions=square[:-4])
+    with pytest.raises(ValueError, match="typecode 'f'"):
+        builder.add_vertices(positions=array("d", _UNIT_SQUARE))
+    with pytest.raises(ValueError, match="match positions"):
+        builder.add_vertices(positions=square, normals=square[:12])
+    vertices = builder.add_vertices(positions=square)
+    with pytest.raises(ValueError, match="whole uint32"):
+        builder.add_triangles(mesh, vertices=vertices, indices=b"\0\0\0")
+    with pytest.raises(ValueError, match="missing vertices"):
+        builder.add_triangles(
+            mesh, vertices=vertices, indices=struct.pack("<3I", 0, 1, 4)
+        )
+    with pytest.raises(ValueError, match="missing vertices"):
+        builder.add_triangles(mesh, vertices=vertices, indices=[0, -1, 2])
+    with pytest.raises(ValueError, match="come in threes"):
+        builder.add_triangles(mesh, vertices=vertices, indices=struct.pack("<2I", 0, 1))
+    with pytest.raises(ValueError, match="cannot be combined"):
+        builder.add_triangles(
+            mesh, vertices=vertices, positions=_UNIT_SQUARE, indices=[0, 1, 2]
+        )
+    with pytest.raises(ValueError, match="unknown vertex set"):
+        builder.add_triangles(mesh, vertices=3, indices=[0, 1, 2])
+    with pytest.raises(ValueError, match="positions or vertices"):
+        builder.add_triangles(mesh, indices=[0, 1, 2])
+    with pytest.raises(ValueError, match="at least two 3D points"):
+        builder.add_lines(mesh, positions=struct.pack("<3f", 0.0, 0.0, 0.0))
+    with pytest.raises(ValueError, match="must not be empty"):
+        builder.add_lines(mesh, vertices=vertices, indices=b"")
+    assert builder.vertex_count == 4

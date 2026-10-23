@@ -8,12 +8,23 @@ Coordinates are given in the package convention (right-handed, Z-up, package
 length units). The root node carries the single conversion to glTF
 conventions (metres, Y-up), so meshes and node transforms stay in package
 units and nothing else has to know about the swap.
+
+Vertex data is accepted either as flat Python sequences or as packed
+little-endian buffers (``bytes``, ``bytearray``, ``memoryview`` or
+``array.array``): ``float32`` triples for positions and normals, ``uint32``
+for indices. Packed buffers are written without being expanded into Python
+objects, which is how native-format adapters hand over a million vertices.
+One vertex set registered with :meth:`GlbBuilder.add_vertices` can be shared
+by several primitives, so face groups and edge outlines of one body do not
+duplicate the positions.
 """
 
 from __future__ import annotations
 
 import json
 import struct
+import sys
+from array import array
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from math import isfinite
@@ -37,6 +48,78 @@ _MODE_LINE_STRIP: Final = 3
 _MODE_TRIANGLES: Final = 4
 
 ColorRGBA = tuple[float, float, float, float]
+FloatArray = Sequence[float] | bytes | bytearray | memoryview | array
+"""Flat ``x, y, z, ...`` floats, or their packed little-endian ``float32`` bytes."""
+IndexArray = Sequence[int] | bytes | bytearray | memoryview | array
+"""Vertex indices, or their packed little-endian ``uint32`` bytes."""
+
+_BUFFER_TYPES: Final = (bytes, bytearray, memoryview)
+_BIG_ENDIAN: Final = sys.byteorder == "big"
+
+
+def _native_array(typecode: str, payload: bytes) -> array:
+    """Decode little-endian ``payload`` into a native-order array."""
+    values = array(typecode)
+    values.frombytes(payload)
+    if _BIG_ENDIAN:
+        values.byteswap()
+    return values
+
+
+def _array_payload(values: array) -> bytes:
+    if _BIG_ENDIAN:
+        values = array(values.typecode, values)
+        values.byteswap()
+    return values.tobytes()
+
+
+def _float32_payload(values: FloatArray, *, name: str) -> bytes:
+    """Return the little-endian ``float32`` bytes of a float sequence or buffer."""
+    if isinstance(values, array):
+        if values.typecode != "f":
+            raise ValueError(f"{name} array must use typecode 'f'")
+        return _array_payload(values)
+    if isinstance(values, _BUFFER_TYPES):
+        payload = bytes(values)
+        if len(payload) % 4:
+            raise ValueError(f"{name} buffer must hold whole float32 values")
+        return payload
+    return struct.pack(f"<{len(values)}f", *values)
+
+
+def _uint32_payload(values: IndexArray, *, name: str) -> bytes:
+    """Return the little-endian ``uint32`` bytes of an index sequence or buffer."""
+    if isinstance(values, array):
+        if values.typecode not in {"I", "L"} or values.itemsize != 4:
+            raise ValueError(f"{name} array must hold 32-bit unsigned integers")
+        return _array_payload(values)
+    if isinstance(values, _BUFFER_TYPES):
+        payload = bytes(values)
+        if len(payload) % 4:
+            raise ValueError(f"{name} buffer must hold whole uint32 values")
+        return payload
+    if values and min(values) < 0:
+        raise ValueError(f"{name} reference missing vertices")
+    return struct.pack(f"<{len(values)}I", *values)
+
+
+def _index_stats(payload: bytes) -> tuple[int, int]:
+    """Return the index count and the highest index (``-1`` when empty)."""
+    values = _native_array("I", payload)
+    return len(values), (max(values) if values else -1)
+
+
+def _payload_bounds(payload: bytes) -> Bounds:
+    values = _native_array("f", payload)
+    xs, ys, zs = values[0::3], values[1::3], values[2::3]
+    return (min(xs), min(ys), min(zs)), (max(xs), max(ys), max(zs))
+
+
+@dataclass(frozen=True, slots=True)
+class _VertexSet:
+    position_accessor: int
+    normal_accessor: int | None
+    count: int
 
 
 def gltf_matrix(matrix: Matrix4) -> list[float]:
@@ -101,6 +184,7 @@ class GlbBuilder:
     _materials: list[dict[str, Any]] = field(
         init=False, default_factory=list, repr=False
     )
+    _vertex_sets: list[_VertexSet] = field(init=False, default_factory=list, repr=False)
     _triangle_count: int = field(init=False, default=0)
     _line_segment_count: int = field(init=False, default=0)
     _vertex_count: int = field(init=False, default=0)
@@ -238,35 +322,77 @@ class GlbBuilder:
         self._nodes[parent_index].setdefault("children", []).append(index)
         return index
 
-    # -- primitives ----------------------------------------------------------
+    # -- vertices and primitives ---------------------------------------------
+
+    def add_vertices(
+        self,
+        *,
+        positions: FloatArray,
+        normals: FloatArray | None = None,
+    ) -> int:
+        """Register a vertex set and return its handle for ``vertices=``.
+
+        ``positions`` (and ``normals``, which must have the same length) are
+        flat ``x, y, z`` floats or packed little-endian ``float32`` buffers.
+        The set is written once; any number of TRIANGLES, LINES or LINE_STRIP
+        primitives may index into it. Its vertices count once towards
+        :attr:`vertex_count` and :attr:`bounds`.
+        """
+        payload = _float32_payload(positions, name="positions")
+        if len(payload) % 12 or not payload:
+            raise ValueError("positions must hold complete 3D points")
+        normal_payload: bytes | None = None
+        if normals is not None:
+            normal_payload = _float32_payload(normals, name="normals")
+            if len(normal_payload) != len(payload):
+                raise ValueError("normals must match positions")
+        position_accessor = self._add_float_payload(payload, bounds=True)
+        normal_accessor = (
+            None
+            if normal_payload is None
+            else self._add_float_payload(normal_payload, bounds=False)
+        )
+        count = len(payload) // 12
+        self._vertex_sets.append(_VertexSet(position_accessor, normal_accessor, count))
+        self._vertex_count += count
+        low, high = _payload_bounds(payload)
+        self._bounds = extend_bounds(self._bounds, [*low, *high])
+        return len(self._vertex_sets) - 1
 
     def add_triangles(
         self,
         mesh: int,
         *,
-        positions: Sequence[float],
-        indices: Sequence[int],
-        normals: Sequence[float] | None = None,
+        indices: IndexArray,
+        positions: FloatArray | None = None,
+        normals: FloatArray | None = None,
+        vertices: int | None = None,
         material: int | None = None,
         extras: dict[str, Any] | None = None,
     ) -> int:
-        """Append an indexed TRIANGLES primitive; return its index in the mesh."""
+        """Append an indexed TRIANGLES primitive; return its index in the mesh.
+
+        Pass either ``positions`` (with optional ``normals``) to write a vertex
+        set for this primitive alone, or ``vertices`` from
+        :meth:`add_vertices` to index a shared set. ``indices`` are three per
+        triangle, as a sequence or packed ``uint32`` bytes.
+        """
         self._check_mesh(mesh)
-        if len(positions) % 3 or not positions:
-            raise ValueError("positions must hold complete 3D points")
-        if len(indices) % 3 or not indices:
+        vertex_set = self._resolve_vertex_set(
+            positions=positions, normals=normals, vertices=vertices
+        )
+        index_payload = _uint32_payload(indices, name="triangle indices")
+        count, highest = _index_stats(index_payload)
+        if count % 3 or not count:
             raise ValueError("triangle indices must come in threes")
-        if normals is not None and len(normals) != len(positions):
-            raise ValueError("normals must match positions")
-        vertex_total = len(positions) // 3
-        if max(indices) >= vertex_total or min(indices) < 0:
+        if highest >= vertex_set.count:
             raise ValueError("triangle indices reference missing vertices")
-        attributes = {"POSITION": self._add_float_vectors(positions, bounds=True)}
-        if normals is not None:
-            attributes["NORMAL"] = self._add_float_vectors(normals, bounds=False)
+        attributes = {"POSITION": vertex_set.position_accessor}
+        if vertex_set.normal_accessor is not None:
+            attributes["NORMAL"] = vertex_set.normal_accessor
         primitive: dict[str, Any] = {
             "attributes": attributes,
-            "indices": self._add_indices(indices),
+            "indices": self._add_index_payload(index_payload),
             "mode": _MODE_TRIANGLES,
         }
         if material is not None:
@@ -275,17 +401,16 @@ class GlbBuilder:
         if extras:
             primitive["extras"] = dict(extras)
         self._meshes[mesh]["primitives"].append(primitive)
-        self._triangle_count += len(indices) // 3
-        self._vertex_count += vertex_total
-        self._bounds = extend_bounds(self._bounds, list(positions))
+        self._triangle_count += count // 3
         return len(self._meshes[mesh]["primitives"]) - 1
 
     def add_lines(
         self,
         mesh: int,
         *,
-        positions: Sequence[float],
-        indices: Sequence[int] | None = None,
+        positions: FloatArray | None = None,
+        indices: IndexArray | None = None,
+        vertices: int | None = None,
         strip: bool = False,
         material: int | None = None,
         extras: dict[str, Any] | None = None,
@@ -293,29 +418,39 @@ class GlbBuilder:
         """Append a LINES (index pairs) or LINE_STRIP primitive.
 
         Without ``indices`` the points are used in order: as one strip, or as
-        consecutive segments for LINES (so ``positions`` holds pairs).
+        consecutive segments for LINES (so ``positions`` holds pairs). A shared
+        vertex set from :meth:`add_vertices` is used through ``vertices``.
         """
         self._check_mesh(mesh)
-        if len(positions) % 3 or len(positions) < 6:
+        if vertices is None and positions is not None:
+            payload = _float32_payload(positions, name="line positions")
+            if len(payload) % 12 or len(payload) < 24:
+                raise ValueError("line positions need at least two 3D points")
+        vertex_set = self._resolve_vertex_set(
+            positions=positions, normals=None, vertices=vertices
+        )
+        if vertex_set.count < 2:
             raise ValueError("line positions need at least two 3D points")
-        vertex_total = len(positions) // 3
         if indices is None:
-            indices = list(range(vertex_total))
-        elif not indices:
+            index_payload = _uint32_payload(range(vertex_set.count), name="indices")
+        else:
+            index_payload = _uint32_payload(indices, name="line indices")
+        count, highest = _index_stats(index_payload)
+        if not count:
             raise ValueError("line indices must not be empty")
-        if max(indices) >= vertex_total or min(indices) < 0:
+        if highest >= vertex_set.count:
             raise ValueError("line indices reference missing vertices")
         if strip:
-            if len(indices) < 2:
+            if count < 2:
                 raise ValueError("a line strip needs at least two indices")
-            segments = len(indices) - 1
+            segments = count - 1
         else:
-            if len(indices) % 2 or len(indices) < 2:
+            if count % 2 or count < 2:
                 raise ValueError("LINES indices must come in pairs")
-            segments = len(indices) // 2
+            segments = count // 2
         primitive: dict[str, Any] = {
-            "attributes": {"POSITION": self._add_float_vectors(positions, bounds=True)},
-            "indices": self._add_indices(indices),
+            "attributes": {"POSITION": vertex_set.position_accessor},
+            "indices": self._add_index_payload(index_payload),
             "mode": _MODE_LINE_STRIP if strip else _MODE_LINES,
         }
         if material is not None:
@@ -325,8 +460,6 @@ class GlbBuilder:
             primitive["extras"] = dict(extras)
         self._meshes[mesh]["primitives"].append(primitive)
         self._line_segment_count += segments
-        self._vertex_count += vertex_total
-        self._bounds = extend_bounds(self._bounds, list(positions))
         return len(self._meshes[mesh]["primitives"]) - 1
 
     # -- output ------------------------------------------------------------
@@ -394,32 +527,48 @@ class GlbBuilder:
         if not 0 <= material < len(self._materials):
             raise ValueError(f"unknown material index {material}")
 
-    def _add_float_vectors(self, values: Sequence[float], *, bounds: bool) -> int:
-        count = len(values) // 3
-        payload = struct.pack(f"<{len(values)}f", *values)
+    def _resolve_vertex_set(
+        self,
+        *,
+        positions: FloatArray | None,
+        normals: FloatArray | None,
+        vertices: int | None,
+    ) -> _VertexSet:
+        if vertices is None:
+            if positions is None:
+                raise ValueError("positions or vertices is required")
+            return self._vertex_sets[
+                self.add_vertices(positions=positions, normals=normals)
+            ]
+        if positions is not None or normals is not None:
+            raise ValueError("positions and normals cannot be combined with vertices")
+        if not 0 <= vertices < len(self._vertex_sets):
+            raise ValueError(f"unknown vertex set {vertices}")
+        return self._vertex_sets[vertices]
+
+    def _add_float_payload(self, payload: bytes, *, bounds: bool) -> int:
         view = self._add_buffer_view(payload, target=_ARRAY_BUFFER)
         accessor: dict[str, Any] = {
             "bufferView": view,
             "componentType": _FLOAT,
-            "count": count,
+            "count": len(payload) // 12,
             "type": "VEC3",
         }
         if bounds:
-            # glTF requires POSITION bounds; use the float32-rounded values.
-            rounded = struct.unpack(f"<{len(values)}f", payload)
-            accessor["min"] = [min(rounded[axis::3]) for axis in range(3)]
-            accessor["max"] = [max(rounded[axis::3]) for axis in range(3)]
+            # glTF requires POSITION bounds; they are the float32-rounded values.
+            low, high = _payload_bounds(payload)
+            accessor["min"] = list(low)
+            accessor["max"] = list(high)
         self._accessors.append(accessor)
         return len(self._accessors) - 1
 
-    def _add_indices(self, values: Sequence[int]) -> int:
-        payload = struct.pack(f"<{len(values)}I", *values)
+    def _add_index_payload(self, payload: bytes) -> int:
         view = self._add_buffer_view(payload, target=_ELEMENT_ARRAY_BUFFER)
         self._accessors.append(
             {
                 "bufferView": view,
                 "componentType": _UNSIGNED_INT,
-                "count": len(values),
+                "count": len(payload) // 4,
                 "type": "SCALAR",
             }
         )
@@ -657,8 +806,10 @@ def validate_glb_bytes(payload: bytes) -> GlbValidationReport:
 __all__ = [
     "GLB_ENCODING",
     "GLB_MEDIA_TYPE",
+    "FloatArray",
     "GlbBuilder",
     "GlbValidationReport",
+    "IndexArray",
     "gltf_matrix",
     "root_conversion_matrix",
     "validate_glb_bytes",
