@@ -111,3 +111,87 @@ def synthetic_document(
     if display:
         payload += modern_frame("Contents/DisplayLists", display_lists(normals=normals))
     return payload
+
+
+def mfc_string(text: str) -> bytes:
+    """MFC ``CString`` as stored in display streams: ``ff fe ff`` + length + UTF-16."""
+    data = text.encode("utf-16-le")
+    count = len(data) // 2
+    prefix = bytes([count]) if count < 255 else b"\xff" + struct.pack("<H", count)
+    return b"\xff\xfe\xff" + prefix + data
+
+
+IDENTITY_TOKENS = "1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"
+
+
+def assembly_document(
+    instances: list[dict],
+    *,
+    assembly: str = "Frame",
+    leading_points: list[tuple[float, float, float]] | None = None,
+) -> bytes:
+    """A modern assembly with ``swReference`` components and placed display tables.
+
+    Each instance dict has ``name``, ``number``, optional ``transform`` (sixteen
+    space-separated tokens), ``hidden``, ``suppressed`` and ``points`` (one face
+    table, ``None`` for no geometry). ``leading_points`` adds a face table before
+    any instance record, which no component can claim.
+    """
+    files = [f'<swFile id="0" swDocType="ASSEMBLY" swPath="C:\\{assembly}.SLDASM"/>']
+    models = []
+    references = []
+    for index, item in enumerate(instances, start=1):
+        name = item["name"]
+        files.append(
+            f'<swFile id="{index}" swDocType="PART" swPath="C:\\{name}.SLDPRT"/>'
+        )
+        models.append(
+            f'<swModel id="m{index}" swFileRef="{index}" '
+            'swConfigurationName="Default"/>'
+        )
+        number = item["number"]
+        references.append(
+            f'<swReference swName="{name}" swReferenceNumber="{number}" '
+            f'swID="{100 + index}" swModelRef="m{index}" '
+            f'swTransform="{item.get("transform", IDENTITY_TOKENS)}" '
+            f'swSuppressed="{int(bool(item.get("suppressed")))}" '
+            f'swHidden="{int(bool(item.get("hidden")))}"/>'
+        )
+    xml = (
+        "<root><swHeader>" + "".join(files) + "</swHeader><swModelList>"
+        '<swModel id="self" swFileRef="0" swConfigurationId="0">'
+        '<swConfiguration swID="0" swName="Default"/>'
+        + "".join(references)
+        + "</swModel>"
+        + "".join(models)
+        + "</swModelList></root>"
+    )
+    # sldkit reads components (swReference) from the COMPINSTANCETREE stream only;
+    # the Features stream carries the document kind.
+    header = document_header("ASSEMBLY") + modern_frame(
+        "swXmlContents/COMPINSTANCETREE", xml.encode()
+    )
+    chunks = [class_declaration(b"uoTempAssemblySHDData_c"), mfc_string(assembly)]
+    first = True
+
+    def face_table(points: list[tuple[float, float, float]]) -> bytes:
+        nonlocal first
+        if first:
+            first = False
+            return b"".join(
+                (
+                    class_declaration(b"uoTempFaceTessData_c"),
+                    struct.pack("<2I", 2, 1),
+                    table(points),
+                )
+            )
+        return b"".join((b"\x01\x80", struct.pack("<2I", 1, 1), table(points)))
+
+    if leading_points is not None:
+        chunks.append(face_table(leading_points))
+    for item in instances:
+        if item.get("points") is None:
+            continue
+        chunks.append(mfc_string(f"{item['name']}-{item['number']}@{assembly}"))
+        chunks.append(face_table(item["points"]))
+    return header + modern_frame("Contents/DisplayLists", b"".join(chunks))

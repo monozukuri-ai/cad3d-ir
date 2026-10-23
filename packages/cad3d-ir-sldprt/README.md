@@ -1,13 +1,20 @@
 # cad3d-ir-sldprt
 
-`cad3d-ir-sldprt` imports SOLIDWORKS part documents (`.SLDPRT`) into
-`cad3d-ir` through [sldkit](https://github.com/monozukuri-ai/sldkit). It does
-not read the Parasolid B-Rep: it takes the triangle meshes that SOLIDWORKS
-saved for its own display (`DisplayLists`), which sldkit returns as packed
-buffers, and writes them as one glTF binary with the same conventions as the
-STEP adapter. Document metadata (internal version, configuration names, custom
-properties, units) and the saved preview image come from sldkit's bounded
-metadata parse.
+`cad3d-ir-sldprt` imports SOLIDWORKS parts (`.SLDPRT`) and assemblies
+(`.SLDASM`) into `cad3d-ir` through
+[sldkit](https://github.com/monozukuri-ai/sldkit). It does not read the
+Parasolid B-Rep: it takes the triangle meshes that SOLIDWORKS saved for its
+own display (`DisplayLists`), which sldkit returns as packed buffers, and
+writes them as one glTF binary with the same conventions as the STEP adapter.
+Document metadata (internal version, configuration names, custom properties,
+units) and the saved preview image come from sldkit's bounded metadata parse.
+
+Assemblies are placed from what the file stores. The display stream keeps one
+record per component instance ahead of that instance's face tables, and the
+component list carries each instance's `swTransform`; the adapter joins the
+two and emits one glTF node per instance with its transform. On a four-valve
+FESTO manifold this reproduced the STEP export of the same assembly within a
+tenth of a millimetre (see `cad3d_ir_sldprt.assembly`).
 
 The result is what SOLIDWORKS showed on screen when the file was saved: every
 visible face at the saved image quality, face outlines as edges, saved face
@@ -40,7 +47,8 @@ for diagnostic in result.diagnostics:
 ```console
 cad3d-ir-sldprt bracket.SLDPRT converted/                 # manifest + GLB + preview image
 cad3d-ir-sldprt bracket.SLDPRT converted/ --no-mesh       # metadata and preview only
-cad3d-ir-sldprt frame.SLDASM converted/ --accept-assemblies
+cad3d-ir-sldprt frame.SLDASM converted/                   # placed component instances
+cad3d-ir-sldprt frame.SLDASM converted/ --no-assemblies   # reject assemblies instead
 cad3d-ir-sldprt bracket.SLDPRT converted/ --diagnostics report.json
 ```
 
@@ -61,6 +69,15 @@ cad3d-ir-sldprt bracket.SLDPRT converted/ --diagnostics report.json
   `.bmp`, `properties.role="preview-image"`), referenced from
   `metadata.preview_resource_id`.
 
+For an assembly the root product is an `assembly`, every component instance
+that the display stream records becomes its own `part` product with a
+configuration and (when it has geometry) a body, and the root configuration
+owns one `Occurrence` per instance with the component transform in package
+millimetres (`visible=False` for hidden components; suppressed components are
+left out). Face tables that cannot be joined to a placed instance, such as
+nested subassemblies, stay at their stored coordinates in a root body and are
+reported.
+
 The GLB has one shared vertex set in millimetres, one TRIANGLES primitive per
 saved colour whose `extras.ranges` list `[pick_id, first_index, index_count]`
 per face table, and one LINES primitive with the face outlines. The pick id
@@ -78,13 +95,11 @@ without any display data into `SldprtReadError`; `validate` runs the package
 graph validation. The tessellation options do not apply: the mesh is the one
 SOLIDWORKS saved.
 
-`SldprtImporter(accept_assemblies=False, read_properties=True,
+`SldprtImporter(accept_assemblies=True, read_properties=True,
 include_preview=True, limit_profile="service")`:
 
-- `accept_assemblies=True` lets `.SLDASM` documents through. Their display
-  tables are returned in stored coordinates and sldkit does not verify
-  component placement, so the package has one body and the
-  `SLDPRT_ASSEMBLY_PLACEMENT_UNVERIFIED` warning, not occurrences.
+- `accept_assemblies=False` rejects `.SLDASM` documents with
+  `UnsupportedDocumentKindError`. By default they are imported and placed.
 - `read_properties=False` skips the metadata parse (a part still gets its
   kind and version from the display stream).
 - `include_preview=False` leaves the preview image out.
@@ -103,7 +118,10 @@ include_preview=True, limit_profile="service")`:
 | `SLDPRT_DISPLAY_STREAM_UNREADABLE` | warning | A display stream could not be decoded; the others are kept. |
 | `SLDPRT_DISPLAY_ENCODING_UNSUPPORTED` | warning | The display stream uses an encoding sldkit does not decode (older `__Zip` streams). |
 | `SLDPRT_VERTEX_BUDGET_EXCEEDED` | warning | The limit profile stopped packing vertices; the mesh is partial. |
-| `SLDPRT_ASSEMBLY_PLACEMENT_UNVERIFIED` | warning | Assembly display tables are shown as stored; placement is not decoded. |
+| `SLDASM_PLACEMENT_FROM_COMPONENT_TRANSFORMS` | info | Component instances were placed with the assembly's stored `swTransform` values. |
+| `SLDASM_PLACEMENT_UNRESOLVED` | warning | Some face tables could not be joined to a placed instance (nested subassemblies, unmatched records); they stay at stored coordinates. |
+| `SLDASM_COMPONENTS_SKIPPED` | info | Hidden and suppressed component instances are left out of the visualization. |
+| `SLDPRT_ASSEMBLY_PLACEMENT_UNVERIFIED` | warning | Only when nothing could be placed: the stored display tables are shown as they are. |
 | `SLDPRT_PREVIEW_ONLY` | warning | No display mesh could be read; only the preview image and metadata are available. |
 | `SLDPRT_PREVIEW_UNREADABLE` | warning | The saved preview image could not be extracted or decoded. |
 | `SLDPRT_PROPERTIES_NOT_READ` | warning | The metadata parse failed; the mesh is still written. |
@@ -118,8 +136,9 @@ Other `display.*` diagnostics from sldkit are passed through as
 - Modern-container parts (SOLIDWORKS 2015 and later) and OLE2 parts whose
   display stream uses the `__ZLB` encoding yield meshes. OLE2 parts with the
   older `__Zip` encoding yield the preview image and metadata only.
-- Drawings (`.SLDDRW`) are rejected. Assemblies are rejected unless accepted
-  explicitly, and then flagged.
+- Drawings (`.SLDDRW`) are rejected. Assemblies are placed one level deep:
+  nested subassemblies keep their stored coordinates and are reported, because
+  their instance paths are not in the top-level component list.
 - Configurations are not resolved: the display streams that SOLIDWORKS saved
   are returned, and a document with several mesh-bearing streams is flagged.
 - Colours follow sldkit's saved precedence (body, feature, face); textures

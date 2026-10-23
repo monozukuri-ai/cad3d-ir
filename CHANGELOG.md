@@ -1,5 +1,18 @@
 # Changelog
 
+## cad3d-ir-sldprt 0.2.2 — 2026-10-23
+
+- Assemblies (`.SLDASM`) are imported by default and placed: each face table
+  is joined to its component instance through the instance records of the
+  display stream and moved with the component's `swTransform` (row-major 4x4
+  in metres for row vectors), giving one glTF node and one IR occurrence per
+  instance. Hidden instances become invisible occurrences, suppressed ones are
+  left out, nested subassemblies stay at stored coordinates and are reported
+  (`SLDASM_PLACEMENT_UNRESOLVED`). Verified against the STEP export of a
+  four-valve manifold (median nearest-neighbour distance 0.16 mm).
+- `accept_assemblies` now defaults to `True`; `False` rejects assemblies.
+- The CLI gained `--no-assemblies`.
+
 ## 0.2.1 — 2026-10-23
 
 ### cad3d-ir (core, IR schema 0.2.0)

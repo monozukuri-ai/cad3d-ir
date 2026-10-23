@@ -177,18 +177,18 @@ def test_derived_normals_are_reported(tmp_path: Path) -> None:
     assert derived.details["sldkit_code"] == "display.normals_derived"
 
 
-def test_assemblies_are_rejected_unless_accepted(tmp_path: Path) -> None:
+def test_assemblies_without_instance_records_stay_unplaced(tmp_path: Path) -> None:
     path = tmp_path / "frame.SLDASM"
     path.write_bytes(synthetic_document("ASSEMBLY"))
-    with pytest.raises(UnsupportedDocumentKindError, match="assemblies"):
-        SldprtImporter().import_file(
+    with pytest.raises(UnsupportedDocumentKindError, match="accept_assemblies"):
+        SldprtImporter(accept_assemblies=False).import_file(
             path,
             options=ImportOptions(),
             resources=DirectoryResourceWriter(tmp_path / "a"),
         )
-    assert SldprtImporter().probe(path) == pytest.approx(0.5)
-    assert SldprtImporter(accept_assemblies=True).probe(path) == pytest.approx(0.9)
-    result = SldprtImporter(accept_assemblies=True).import_file(
+    assert SldprtImporter(accept_assemblies=False).probe(path) == pytest.approx(0.5)
+    assert SldprtImporter().probe(path) == pytest.approx(0.9)
+    result = SldprtImporter().import_file(
         path,
         options=ImportOptions(include_visualization_mesh=True),
         resources=DirectoryResourceWriter(tmp_path / "b"),
@@ -196,9 +196,18 @@ def test_assemblies_are_rejected_unless_accepted(tmp_path: Path) -> None:
     [product] = result.package.product_definitions
     assert product.kind == "assembly"
     assert result.package.source_documents[0].format == "sldasm"
-    assert "SLDPRT_ASSEMBLY_PLACEMENT_UNVERIFIED" in {
-        item.code for item in result.diagnostics
-    }
+    codes = {item.code for item in result.diagnostics}
+    # 部品レコードが無い: 表は根に置き、sldkit の未検証の注意もそのまま通す
+    assert {
+        "SLDPRT_ASSEMBLY_PLACEMENT_UNVERIFIED",
+        "SLDASM_PLACEMENT_UNRESOLVED",
+    } <= codes
+    assert "SLDASM_PLACEMENT_FROM_COMPONENT_TRANSFORMS" not in codes
+    assert (
+        result.statistics["unplaced_parts"] == 2
+        and result.statistics["occurrences"] == 0
+    )
+    assert result.package.visualizations[0].statistics["triangles"] == 3
 
 
 def test_drawings_foreign_files_and_ir_versions_are_rejected(tmp_path: Path) -> None:

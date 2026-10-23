@@ -40,9 +40,9 @@ def _parser() -> argparse.ArgumentParser:
         help="do not write the saved preview image",
     )
     parser.add_argument(
-        "--accept-assemblies",
+        "--no-assemblies",
         action="store_true",
-        help="accept .SLDASM documents (stored display tables, placement unverified)",
+        help="reject .SLDASM documents instead of placing their component instances",
     )
     parser.add_argument(
         "--limits",
@@ -77,7 +77,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     try:
         importer = SldprtImporter(
-            accept_assemblies=args.accept_assemblies,
+            accept_assemblies=not args.no_assemblies,
             include_preview=not args.no_preview,
             limit_profile=args.limits,
         )
