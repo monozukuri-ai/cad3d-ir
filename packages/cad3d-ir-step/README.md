@@ -4,7 +4,9 @@
 `cad3d-ir` through Open CASCADE XDE. It preserves product definitions,
 assembly occurrences, local placements, names and surface colours, exports
 each reusable leaf shape as an external OCCT B-Rep resource and, on request,
-tessellates everything into glTF binary display meshes.
+tessellates everything into glTF binary display meshes. Since 0.3.0 it also
+writes STEP: a STEP or IGES document re-exported in another schema or unit,
+or a faceted STEP built from the triangles of a visualization GLB.
 
 The runtime uses the official `cadquery-ocp-novtk` binding because conversion
 does not require VTK or a visualization stack.
@@ -39,6 +41,42 @@ cad3d-ir-step assembly.step converted/            # B-Rep resources only
 cad3d-ir-step assembly.step converted/ --mesh     # + per-body GLB + package GLB
 cad3d-ir-step robot.stp converted/ --mesh --no-brep --deflection-ratio 0.002
 cad3d-ir-step part.igs converted/ --mesh
+```
+
+## Writing STEP
+
+```python
+from cad3d_ir_step import MeshTooLargeError, export_step, mesh_to_step
+
+# STEP or IGES -> STEP in another schema / unit. Definition colours are copied
+# onto the component labels first, so instanced parts keep their colour.
+result = export_step("assembly.igs", "assembly.step", schema="AP242", unit="mm")
+print(result.products, result.components, result.colors_copied, result.byte_length)
+
+# Triangles of a cad3d-ir GLB -> one sewn solid per placed body (planar
+# triangular faces; opens anywhere, not editable). Capped at 20,000 triangles
+# because sewing time grows with the square of the count.
+try:
+    mesh = mesh_to_step(open("part.glb", "rb").read(), "part.step")
+except MeshTooLargeError as exc:
+    print(exc.triangles, exc.limit)
+else:
+    print(mesh.solids, mesh.open_shells, mesh.volume_mm3, mesh.diagnostics[0].code)
+```
+
+`export_step(verify=True)` reads the written file back and reports fewer
+coloured shapes as `STEP_COLORS_CHANGED`; PMI that is not written is reported
+as `STEP_PMI_NOT_WRITTEN`. `mesh_to_step(mode="tessellated")` writes AP242
+`TRIANGULATED_FACE` entities instead of solids (about 80 bytes per triangle
+instead of 2.4 KB), which not every CAD reads. Mesh results always carry
+`STEP_MESH_SOLID_FACETED` or `STEP_MESH_TESSELLATED`; open shells are reported
+as `STEP_MESH_FREE_EDGES`.
+
+```console
+cad3d-ir-step-export assembly.step assembly-ap203.step --schema AP203
+cad3d-ir-step-export part.igs part.step --unit inch --verify
+cad3d-ir-step-export preview.glb part.step --max-triangles 20000
+cad3d-ir-step-export preview.glb part.step --mode tessellated
 ```
 
 ## Options

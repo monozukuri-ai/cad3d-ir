@@ -61,7 +61,7 @@ from OCP.XCAFPrs import (
 from cad3d_ir_step.errors import StepReadError
 from cad3d_ir_step.tessellate import ShapeMesh, linear_deflection_for, mesh_shape
 
-ADAPTER_VERSION = "0.2.0"
+ADAPTER_VERSION = "0.3.0"
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 _IDENTITY_3X4 = (

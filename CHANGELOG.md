@@ -25,10 +25,23 @@
 - Requires `cad3d-ir>=0.3,<0.4`. Includes the 0.2.2 changes below, which were
   never published on their own.
 
-### cad3d-ir-step
+### cad3d-ir-step 0.3.0
 
-- Requires `cad3d-ir>=0.3,<0.4`; its own version bump follows with the STEP
-  export release.
+- Added `export_step`: a STEP or IGES file is read into XCAF again and written
+  with `STEPCAFControl_Writer` as AP203, AP214 or AP242 in a chosen unit.
+  Definition colours are copied onto component labels before writing, because
+  the writer otherwise drops the surface colour of instanced shapes;
+  `verify=True` reads the result back and reports `STEP_COLORS_CHANGED`.
+  PMI that is not written is reported as `STEP_PMI_NOT_WRITTEN`.
+- Added `mesh_to_step`: the triangles of a cad3d-ir GLB (or `MeshBody` items)
+  become one sewn solid per placed body with the node names and colours
+  (`MakeShapeOnMesh` → `Sewing` → `MakeSolid`, oriented and checked). Open
+  shells are kept as shells and reported (`STEP_MESH_FREE_EDGES`); the result
+  always carries `STEP_MESH_SOLID_FACETED`. A triangle cap (default 20,000)
+  raises `MeshTooLargeError` before geometry is built. `mode="tessellated"`
+  writes AP242 triangulated faces instead.
+- Added the `cad3d-ir-step-export` command. OCCT's writer progress output is
+  silenced while writing. Requires `cad3d-ir>=0.3,<0.4`.
 
 ## cad3d-ir-sldprt 0.2.2 — 2026-10-23
 

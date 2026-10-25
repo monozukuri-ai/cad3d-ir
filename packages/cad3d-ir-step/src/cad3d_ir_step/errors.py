@@ -1,4 +1,4 @@
-"""Public exceptions raised by the STEP adapter."""
+"""Public exceptions raised by the STEP adapter and writer."""
 
 
 class StepImportError(ValueError):
@@ -15,3 +15,19 @@ class UnsupportedStepSchemaError(StepImportError):
 
 class UnsupportedIRVersionError(StepImportError):
     """Raised when the adapter cannot produce the requested IR version."""
+
+
+class StepExportError(ValueError):
+    """Raised when a STEP file cannot be written from the given source."""
+
+
+class MeshTooLargeError(StepExportError):
+    """Raised when a mesh exceeds the triangle cap of the sewn-solid STEP writer."""
+
+    def __init__(self, *, triangles: int, limit: int) -> None:
+        self.triangles = triangles
+        self.limit = limit
+        super().__init__(
+            f"the mesh has {triangles:,} triangles; the sewn-solid STEP writer "
+            f"accepts at most {limit:,}. Simplify the mesh or use the tessellated mode."
+        )

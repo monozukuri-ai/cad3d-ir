@@ -1,7 +1,7 @@
 [project]
 name = "cad3d-ir-step"
-version = "0.2.0"
-description = "STEP and IGES importers for cad3d-ir through Open CASCADE XDE"
+version = "0.3.0"
+description = "STEP and IGES importers and a STEP writer for cad3d-ir through Open CASCADE XDE"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -43,6 +43,7 @@ Issues = "https://github.com/monozukuri-ai/cad3d-ir/issues"
 
 [project.scripts]
 cad3d-ir-step = "cad3d_ir_step.cli:main"
+cad3d-ir-step-export = "cad3d_ir_step.export_cli:main"
 
 [build-system]
 requires = ["uv_build>=0.8.15,<0.9.0"]

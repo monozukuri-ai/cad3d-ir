@@ -40,7 +40,8 @@ The `0.3.0` core provides:
 
 Kernel-backed and native-format importers stay separate. This repository's
 `cad3d-ir-step` workspace member reads STEP (AP203/AP214/AP242) and IGES
-through Open CASCADE XDE and can emit the same visualization meshes. The
+through Open CASCADE XDE, can emit the same visualization meshes, and writes
+STEP (re-export in another schema or unit, or faceted solids from a GLB). The
 `cad3d-ir-sldprt` member reads SOLIDWORKS parts through
 [sldkit](https://github.com/monozukuri-ai/sldkit): it packs the display
 meshes SOLIDWORKS saved into the same GLB layout, without reading the B-Rep,
