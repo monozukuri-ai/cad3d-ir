@@ -1,4 +1,4 @@
-"""Command-line validation and schema inspection."""
+"""Command-line validation, schema inspection, mesh import and export."""
 
 from __future__ import annotations
 
@@ -10,8 +10,10 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from cad3d_ir.exporters import write_obj, write_stl
 from cad3d_ir.importers import ImportOptions, MeshImporter, MeshImportError
 from cad3d_ir.io import DirectoryResourceWriter, dump_manifest, load_manifest
+from cad3d_ir.mesh import GlbReadError, read_glb
 from cad3d_ir.schema import load_schema
 from cad3d_ir.validation import IRValidationError, validate_resources
 
@@ -60,6 +62,29 @@ def _build_parser() -> argparse.ArgumentParser:
         "--diagnostics",
         type=Path,
         help="write structured import diagnostics as JSON",
+    )
+    export_parser = subparsers.add_parser(
+        "export",
+        help="write STL and/or OBJ from a visualization GLB",
+    )
+    export_parser.add_argument("glb", type=Path, help="input .glb written by cad3d-ir")
+    export_parser.add_argument("--stl", type=Path, help="write an STL (millimetres)")
+    export_parser.add_argument(
+        "--ascii-stl",
+        action="store_true",
+        help="write the STL as text instead of binary",
+    )
+    export_parser.add_argument("--obj", type=Path, help="write a Wavefront OBJ")
+    export_parser.add_argument(
+        "--no-normals", action="store_true", help="omit vn records from the OBJ"
+    )
+    export_parser.add_argument(
+        "--no-groups", action="store_true", help="omit o records from the OBJ"
+    )
+    export_parser.add_argument(
+        "--lines",
+        action="store_true",
+        help="write edge polylines as l records in the OBJ",
     )
     return parser
 
@@ -113,6 +138,40 @@ def _run_import(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_export(args: argparse.Namespace) -> int:
+    if args.stl is None and args.obj is None:
+        print("error: pass --stl and/or --obj", file=sys.stderr)
+        return 2
+    scene = read_glb(args.glb.read_bytes())
+    for path, export in (
+        (args.stl, lambda: write_stl(scene, binary=not args.ascii_stl)),
+        (
+            args.obj,
+            lambda: write_obj(
+                scene,
+                normals=not args.no_normals,
+                groups=not args.no_groups,
+                lines=args.lines,
+            ),
+        ),
+    ):
+        if path is None:
+            continue
+        result = export()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(result.data)
+        dropped = (
+            f", {result.degenerate_triangles} degenerate dropped"
+            if result.degenerate_triangles
+            else ""
+        )
+        print(
+            f"wrote {path}: {result.triangles} triangles, {result.vertices} vertices, "
+            f"{len(result.data)} bytes{dropped}"
+        )
+    return 0
+
+
 def _run_schema(args: argparse.Namespace) -> int:
     text = (
         json.dumps(
@@ -142,7 +201,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_schema(args)
         if args.command == "import":
             return _run_import(args)
+        if args.command == "export":
+            return _run_export(args)
     except (
+        GlbReadError,
         IRValidationError,
         MeshImportError,
         ValidationError,

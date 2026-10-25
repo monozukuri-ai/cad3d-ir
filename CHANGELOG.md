@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.3.0 — 2026-10-25
+
+### cad3d-ir (core, IR schema 0.2.0)
+
+- Added `cad3d_ir.mesh.read_glb` and `MeshScene`: the GLBs written by
+  `GlbBuilder` are read back into nodes with world matrices, meshes and
+  primitives in package coordinates. The `extras.cad3d_ir` root is recognised
+  and skipped; a GLB from another writer is converted from glTF metres / Y-up
+  to millimetres / Z-up. `placed_vertex_sets()` hands out positions and
+  normals transformed by each placement, and the `placed_*` counts count a
+  mesh once per node that places it.
+- Added `cad3d_ir.exporters`: `write_stl` (binary or ASCII, face normals,
+  zero-area triangles dropped and counted) and `write_obj` (one `o` per placed
+  node, a shared vertex set written once, `v` / `vn` / `f`, optional `l` edge
+  records, no MTL). Both take a scene or the GLB bytes and return `MeshExport`
+  with the bytes, counts and bounds. `estimate_stl_bytes` and
+  `estimate_obj_bytes` size an output before it is written.
+- Added the `cad3d-ir export` CLI command (`--stl`, `--ascii-stl`, `--obj`,
+  `--no-normals`, `--no-groups`, `--lines`).
+
+### cad3d-ir-sldprt 0.3.0
+
+- Requires `cad3d-ir>=0.3,<0.4`. Includes the 0.2.2 changes below, which were
+  never published on their own.
+
+### cad3d-ir-step
+
+- Requires `cad3d-ir>=0.3,<0.4`; its own version bump follows with the STEP
+  export release.
+
 ## cad3d-ir-sldprt 0.2.2 — 2026-10-23
 
 - Assemblies (`.SLDASM`) are imported by default and placed: each face table

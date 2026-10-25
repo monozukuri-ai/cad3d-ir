@@ -62,7 +62,7 @@ from cad3d_ir_sldprt.errors import (
 from cad3d_ir_sldprt.preview import PreviewImage, preview_image
 
 ADAPTER_NAME = "cad3d-ir-sldprt"
-ADAPTER_VERSION = "0.2.2"
+ADAPTER_VERSION = "0.3.0"
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 _MAX_PROPERTIES = 200

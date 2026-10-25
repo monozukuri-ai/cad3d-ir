@@ -34,7 +34,7 @@ wheels = [
 
 [[package]]
 name = "cad3d-ir"
-version = "0.2.1"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
@@ -61,7 +61,7 @@ dev = [
 
 [[package]]
 name = "cad3d-ir-sldprt"
-version = "0.2.2"
+version = "0.3.0"
 source = { editable = "packages/cad3d-ir-sldprt" }
 dependencies = [
     { name = "cad3d-ir" },

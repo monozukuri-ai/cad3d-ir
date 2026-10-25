@@ -15,7 +15,7 @@ adapter packages.
 
 ## Status
 
-The `0.2.1` core provides:
+The `0.3.0` core provides:
 
 - typed Pydantic models and a generated JSON Schema (IR `0.2.0`);
 - graph validation for IDs and cross-object references;
@@ -29,8 +29,14 @@ The `0.2.1` core provides:
   triangle helpers shared by adapters. The writer takes flat sequences or
   packed little-endian buffers and can share one vertex set between
   primitives;
+- `cad3d_ir.mesh.read_glb`: reads those GLBs back into nodes, placements and
+  primitives in package coordinates (the inverse of the writer);
+- `cad3d_ir.exporters`: STL (binary or ASCII) and Wavefront OBJ writers that
+  take a visualization GLB and write every placed triangle in package units,
+  plus output-size estimates;
 - a built-in `MeshImporter` for STL (ASCII/binary) and Wavefront OBJ;
-- `cad3d-ir validate`, `cad3d-ir schema` and `cad3d-ir import` CLIs.
+- `cad3d-ir validate`, `cad3d-ir schema`, `cad3d-ir import` and
+  `cad3d-ir export` CLIs.
 
 Kernel-backed and native-format importers stay separate. This repository's
 `cad3d-ir-step` workspace member reads STEP (AP203/AP214/AP242) and IGES
@@ -67,6 +73,33 @@ node and mesh stays in package coordinates. Each node's `extras.id` is the IR
 occurrence (or root product) id, each mesh's `extras.id` the body id, and
 face/edge primitives list `[pick_id, first_index, index_count]` ranges in
 `extras.ranges`, so viewers can map a picked triangle back to a face.
+
+## Exporting meshes
+
+Any visualization GLB can be written back out as STL or OBJ. The exporters walk
+the node tree, apply every placement and write the triangles in package units
+(millimetres), so an assembly comes out as one placed mesh. Zero-area triangles
+are dropped and counted; the estimates let a caller refuse an output that would
+be too large before doing the work.
+
+```python
+from pathlib import Path
+
+from cad3d_ir.exporters import estimate_obj_bytes, write_obj, write_stl
+from cad3d_ir.mesh import read_glb
+
+scene = read_glb(Path("converted/geometry/part-abc123.glb").read_bytes())
+stl = write_stl(scene)  # binary, face normals
+Path("part.stl").write_bytes(stl.data)
+if estimate_obj_bytes(scene.placed_vertex_count, scene.placed_triangle_count) < 200e6:
+    obj = write_obj(scene)  # one ``o`` per node, ``v`` / ``vn`` / ``f``, no MTL
+    Path("part.obj").write_bytes(obj.data)
+print(stl.triangles, stl.degenerate_triangles, stl.bounds)
+```
+
+`cad3d-ir export part.glb --stl part.stl --obj part.obj` does the same from the
+command line (`--ascii-stl`, `--no-normals`, `--no-groups`, `--lines` for edge
+polylines). Both writers accept the GLB bytes directly in place of a scene.
 
 ## Development
 

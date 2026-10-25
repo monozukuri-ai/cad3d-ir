@@ -1,6 +1,6 @@
 [project]
 name = "cad3d-ir-sldprt"
-version = "0.2.2"
+version = "0.3.0"
 description = "SOLIDWORKS part (SLDPRT) importer for cad3d-ir through sldkit's saved display meshes"
 readme = "README.md"
 license = "PolyForm-Noncommercial-1.0.0"
@@ -29,7 +29,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "cad3d-ir>=0.2.1,<0.3",
+    "cad3d-ir>=0.3,<0.4",
     "sldkit>=0.3.0,<0.4",
 ]
 

@@ -32,7 +32,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "cad3d-ir>=0.2,<0.3",
+    "cad3d-ir>=0.3,<0.4",
     "cadquery-ocp-novtk>=7.9.3.1,<7.10",
 ]
 

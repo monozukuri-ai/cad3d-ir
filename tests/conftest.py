@@ -141,3 +141,99 @@ def package_directory(
     resource_path.parent.mkdir(parents=True)
     resource_path.write_bytes(resource_bytes)
     return tmp_path
+
+
+# --- GLB fixtures shared by the scene reader and exporter tests ----------------
+
+CUBE_POSITIONS: list[float] = [
+    0.0, 0.0, 0.0,
+    10.0, 0.0, 0.0,
+    10.0, 10.0, 0.0,
+    0.0, 10.0, 0.0,
+    0.0, 0.0, 10.0,
+    10.0, 0.0, 10.0,
+    10.0, 10.0, 10.0,
+    0.0, 10.0, 10.0,
+]  # fmt: skip
+# Outward-facing triangles of the six faces (two per quad).
+CUBE_INDICES: list[int] = [
+    0, 3, 2, 0, 2, 1,
+    4, 5, 6, 4, 6, 7,
+    0, 1, 5, 0, 5, 4,
+    1, 2, 6, 1, 6, 5,
+    2, 3, 7, 2, 7, 6,
+    3, 0, 4, 3, 4, 7,
+]  # fmt: skip
+CUBE_EDGES: list[int] = [
+    0, 1, 1, 2, 2, 3, 3, 0,
+    4, 5, 5, 6, 6, 7, 7, 4,
+    0, 4, 1, 5, 2, 6, 3, 7,
+]  # fmt: skip
+ROT_Z_90 = (
+    (0.0, -1.0, 0.0, 0.0),
+    (1.0, 0.0, 0.0, 0.0),
+    (0.0, 0.0, 1.0, 0.0),
+    (0.0, 0.0, 0.0, 1.0),
+)
+
+
+def translation(x: float, y: float, z: float):
+    return (
+        (1.0, 0.0, 0.0, x),
+        (0.0, 1.0, 0.0, y),
+        (0.0, 0.0, 1.0, z),
+        (0.0, 0.0, 0.0, 1.0),
+    )
+
+
+def build_cubes(*, nested: bool = False, degenerate: bool = False) -> bytes:
+    """Two (or three) placements of one 10 mm cube with a shared vertex set.
+
+    ``cube-a`` sits at the origin, ``cube-b`` is moved 20 mm along X, and with
+    ``nested`` a ``cube-c`` hangs under ``cube-b`` rotated 90 degrees about Z
+    and moved 20 mm along Y. ``degenerate`` adds one zero-area triangle.
+    """
+    from cad3d_ir.mesh import GlbBuilder, vertex_normals
+    from cad3d_ir.mesh.scene import multiply
+
+    builder = GlbBuilder(root_name="fixture", generator="test")
+    material = builder.add_material("faces", (0.5, 0.5, 0.5, 1.0))
+    mesh = builder.add_mesh("cube", extras={"id": "body-cube"})
+    vertex_set = builder.add_vertices(
+        positions=CUBE_POSITIONS,
+        normals=vertex_normals(CUBE_POSITIONS, CUBE_INDICES),
+    )
+    indices = list(CUBE_INDICES) + ([0, 0, 1] if degenerate else [])
+    builder.add_triangles(
+        mesh,
+        indices=indices,
+        vertices=vertex_set,
+        material=material,
+        extras={"entityKind": "face", "ranges": [[1, 0, len(indices)]]},
+    )
+    builder.add_lines(mesh, indices=CUBE_EDGES, vertices=vertex_set)
+    builder.add_node("cube-a", mesh=mesh, extras={"id": "occurrence-a"})
+    moved = builder.add_node("cube-b", mesh=mesh, matrix=translation(20.0, 0.0, 0.0))
+    if nested:
+        builder.add_node(
+            "cube-c",
+            mesh=mesh,
+            parent=moved,
+            matrix=multiply(translation(0.0, 20.0, 0.0), ROT_Z_90),
+        )
+    return builder.build()
+
+
+@pytest.fixture
+def cubes_glb() -> bytes:
+    return build_cubes()
+
+
+@pytest.fixture
+def nested_cubes_glb() -> bytes:
+    return build_cubes(nested=True)
+
+
+@pytest.fixture
+def degenerate_cubes_glb() -> bytes:
+    return build_cubes(degenerate=True)
