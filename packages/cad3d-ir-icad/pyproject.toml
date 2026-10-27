@@ -1,0 +1,75 @@
+[project]
+name = "cad3d-ir-icad"
+version = "0.3.0"
+description = "iCAD SX part/assembly (ICD) importer for cad3d-ir through icadkit's saved final bodies"
+readme = "README.md"
+license = "PolyForm-Noncommercial-1.0.0"
+license-files = ["LICENSE", "LICENSES/*"]
+requires-python = ">=3.10"
+authors = [
+    { name = "neka-nat", email = "nekanat.stock@gmail.com" },
+]
+keywords = [
+    "3d-cad",
+    "gltf",
+    "icad",
+    "icadkit",
+    "icd",
+    "step",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
+]
+dependencies = [
+    "cad3d-ir>=0.3,<0.4",
+    "cad3d-ir-step>=0.3,<0.4",
+    "icadkit[preview]>=0.3.8,<0.4",
+]
+
+[project.urls]
+Homepage = "https://github.com/monozukuri-ai/cad3d-ir"
+Repository = "https://github.com/monozukuri-ai/cad3d-ir/tree/main/packages/cad3d-ir-icad"
+Issues = "https://github.com/monozukuri-ai/cad3d-ir/issues"
+Licensing = "https://github.com/monozukuri-ai/cad3d-ir/blob/main/packages/cad3d-ir-icad/LICENSE"
+
+[project.scripts]
+cad3d-ir-icad = "cad3d_ir_icad.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.8.15,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4",
+    "ruff>=0.8",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[tool.uv.sources]
+cad3d-ir = { workspace = true }
+cad3d-ir-step = { workspace = true }
+
+[tool.uv.build-backend]
+source-include = [
+    "tests/**",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

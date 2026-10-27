@@ -10,6 +10,7 @@ resolution-markers = [
 [manifest]
 members = [
     "cad3d-ir",
+    "cad3d-ir-icad",
     "cad3d-ir-sldprt",
     "cad3d-ir-step",
 ]
@@ -57,6 +58,37 @@ dev = [
     { name = "pytest", specifier = ">=8.4" },
     { name = "pytest-cov", specifier = ">=6" },
     { name = "ruff", specifier = ">=0.8" },
+]
+
+[[package]]
+name = "cad3d-ir-icad"
+version = "0.3.0"
+source = { editable = "packages/cad3d-ir-icad" }
+dependencies = [
+    { name = "cad3d-ir" },
+    { name = "cad3d-ir-step" },
+    { name = "icadkit", extra = ["preview"] },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "ruff" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cad3d-ir", editable = "." },
+    { name = "cad3d-ir-step", editable = "packages/cad3d-ir-step" },
+    { name = "icadkit", extras = ["preview"], specifier = ">=0.3.8,<0.4" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.4" },
+    { name = "ruff", specifier = ">=0.8" },
+    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0" },
 ]
 
 [[package]]
@@ -315,6 +347,22 @@ wheels = [
 ]
 
 [[package]]
+name = "icadkit"
+version = "0.3.8"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/25/4c/70989883e63206395da288d6663030cf59e95c38369177830b454f6d87d7/icadkit-0.3.8.tar.gz", hash = "sha256:2ff9f50f3a5b11102beddbd208953b35bd9bbea81faec53c88753f55de7ccc87", size = 484659, upload-time = "2026-10-26T16:34:17.043Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/77/61/c5c4bdd1a3a7f5e4f6850712b77108415898a690d2603e971a3e74150901/icadkit-0.3.8-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:05a5506dc54c8f2bfd12860dfbd1b8c812d5b828d6d4d419916566076657ca5e", size = 925865, upload-time = "2026-10-26T16:34:12.225Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/cd/4196c01a069490889974243f73a1eed280fe63b95ed2fc14e23debab3722/icadkit-0.3.8-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:c32a3e250798bfafe591c1cd8523ec69978a9546817bcdd6fb880a33cf9483ad", size = 1013423, upload-time = "2026-10-26T16:34:13.941Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/9c/f9af418c719cf5af80c00b6e3a3390d18537d61cef67c185260d7ed5826d/icadkit-0.3.8-cp310-abi3-win_amd64.whl", hash = "sha256:317bf5f8d9b3a416f48de0f3801e9875142addcee107007300ed08097e3347ef", size = 834766, upload-time = "2026-10-26T16:34:15.535Z" },
+]
+
+[package.optional-dependencies]
+preview = [
+    { name = "parasolid-kit", extra = ["occt"] },
+]
+
+[[package]]
 name = "iniconfig"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -358,6 +406,23 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/7d/fa/3944b40b07da9ce895c0e6303a5ab7d53da063554f534556b134a54d6093/packaging-26.3.tar.gz", hash = "sha256:94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79", size = 313412, upload-time = "2026-08-04T18:15:28.737Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl", hash = "sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c", size = 129956, upload-time = "2026-08-04T18:15:27.159Z" },
+]
+
+[[package]]
+name = "parasolid-kit"
+version = "0.3.7"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/11/6f/589fe32db0f5351e1cee00bc0eef5b62ebb1f7cd98ca1efa0267a11bb786/parasolid_kit-0.3.7.tar.gz", hash = "sha256:9983e489185440aaa61b7f40e81e491f8b5a185cd7b523d4d30628a6a53049d0", size = 1208507, upload-time = "2026-10-06T16:15:06.577Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/82/13/25feda08290ecf3b31243d0fb81abd0dd9713e0c52e957aab26c22a3885c/parasolid_kit-0.3.7-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:2261672972cc3bf47582cfdb17afd50042490daeef453dc39d83e0f397637c00", size = 1307589, upload-time = "2026-10-06T16:14:59.893Z" },
+    { url = "https://files.pythonhosted.org/packages/fa/50/afd04f4c67125a2e61d739db7ec9465b58fafa92d8d78a0533a47d1820be/parasolid_kit-0.3.7-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:ea267a293607302f77c719a324542ab3dceb75eaf736882ed217e258e2c47d2b", size = 1297288, upload-time = "2026-10-06T16:15:01.835Z" },
+    { url = "https://files.pythonhosted.org/packages/d8/e3/b0a98a69774dda4436df6933c2ebc0ec2e50f25c2cc76852530aad780b89/parasolid_kit-0.3.7-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6e3b90e9966b7194f5b8360357647101e9d1b9c298c221b587960da6cad3e6a2", size = 1375268, upload-time = "2026-10-06T16:15:03.449Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/36/fc1ff5550aed74a626fd4c1ad96659f17c6e8904bc91922f8b14403a3c7d/parasolid_kit-0.3.7-cp310-abi3-win_amd64.whl", hash = "sha256:18c75c1c1cc34f144ca38b053dc6965361d8f3ad0286a3796ed436566d43ed1a", size = 1210812, upload-time = "2026-10-06T16:15:05.021Z" },
+]
+
+[package.optional-dependencies]
+occt = [
+    { name = "cadquery-ocp-novtk" },
 ]
 
 [[package]]

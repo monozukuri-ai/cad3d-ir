@@ -73,6 +73,38 @@ preview image with a `SLDPRT_PREVIEW_ONLY` warning.
 Its tests build SolidWorks documents in memory with the frame and table
 grammar sldkit's tests use, so the repository ships no CAD file.
 
+## iCAD SX models through icadkit saved bodies
+
+`packages/cad3d-ir-icad` maps one `.icd` file (iCAD SX keeps parts, the
+assembly tree and the 2D drawing views in a single file) to the IR through
+[icadkit](https://github.com/monozukuri-ai/icadkit):
+
+- Every saved part record becomes a `ProductDefinition` with one
+  `Configuration`; each child record is an `Occurrence` of its parent's
+  configuration with the saved local transform, so the product tree is the
+  iCAD part tree. External part references (other `.icd` files) are kept as
+  products without bodies, listed as `SourceDependency` entries of the source
+  document and reported by `ICD_EXTERNAL_PART_MISSING`.
+- Geometry comes from `icadkit.read_part_shapes(frame="part")`: one OCCT
+  compound per part from its saved final bodies (embedded Parasolid resources
+  converted through parasolid-kit), else its V7L7 CSG result, else its native
+  primitives. Parts whose solids are identical (same body payload hashes,
+  source kinds, part-frame bounds and parity) share one glTF mesh; each part
+  is one glTF node under its parent node. `include_brep` writes one OCCT BREP
+  resource per distinct solid as an exact `brep` representation.
+- `export_step` writes the same solids as a flat STEP assembly (one component
+  per solid body, named after its part, shared referred products), using the
+  STEP adapter's writer.
+- Colours stay palette indices in iCAD and are not mapped
+  (`ICD_APPEARANCE_NOT_MAPPED`); the 2D views are counted
+  (`ICD_2D_VIEWS_PRESENT`) but belong to a 2D reader. Versions icadkit has
+  not qualified fail closed (`ICD_VERSION_UNQUALIFIED`), as do legacy layouts
+  without evaluable geometry (`ICD_LEGACY_VERSION_NO_GEOMETRY`).
+
+The authored test models under `packages/cad3d-ir-icad/tests/data` were built
+with icadkit's own fixture builders (a saved box, an external reference, a 2D
+sheet); no iCAD-produced file is committed.
+
 ## First abstraction fixture
 
 The repository-owned AP242 fixture contains a root assembly, a base plate, and

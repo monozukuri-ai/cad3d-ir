@@ -46,7 +46,12 @@ STEP (re-export in another schema or unit, or faceted solids from a GLB). The
 [sldkit](https://github.com/monozukuri-ai/sldkit): it packs the display
 meshes SOLIDWORKS saved into the same GLB layout, without reading the B-Rep,
 and carries the document metadata and preview image. It is licensed
-separately (PolyForm Noncommercial, see its README).
+separately (PolyForm Noncommercial, see its README). The `cad3d-ir-icad`
+member reads iCAD SX models (`.icd`, parts and assemblies in one file)
+through [icadkit](https://github.com/monozukuri-ai/icadkit): the final
+bodies iCAD saved with each part become exact OCCT solids placed by the saved
+part frames, written as the same GLB layout and, through `export_step`, as a
+STEP assembly. It follows icadkit's licensing (PolyForm Noncommercial).
 
 ## Visualization meshes
 
@@ -117,6 +122,10 @@ uv run --package cad3d-ir-step cad3d-ir-step model.step output/
 # SOLIDWORKS part adapter
 uv run --package cad3d-ir-sldprt pytest packages/cad3d-ir-sldprt/tests
 uv run --package cad3d-ir-sldprt cad3d-ir-sldprt part.SLDPRT output/
+
+# iCAD SX adapter
+uv run --package cad3d-ir-icad pytest packages/cad3d-ir-icad/tests
+uv run --package cad3d-ir-icad cad3d-ir-icad model.icd output/ --step model.step
 ```
 
 ## Minimal use
@@ -151,7 +160,8 @@ and abstraction gate are described in
 ## License
 
 `cad3d-ir` and `cad3d-ir-step` are MIT licensed. `packages/cad3d-ir-sldprt`
-is licensed separately under the PolyForm Noncommercial License 1.0.0 by
-UnRobotics Inc., following sldkit; see
-[its LICENSE](packages/cad3d-ir-sldprt/LICENSE) for the notice and
-commercial contact.
+and `packages/cad3d-ir-icad` are licensed separately under the PolyForm
+Noncommercial License 1.0.0 by UnRobotics Inc., following sldkit and icadkit;
+see [the SOLIDWORKS adapter's LICENSE](packages/cad3d-ir-sldprt/LICENSE) and
+[the iCAD adapter's LICENSE](packages/cad3d-ir-icad/LICENSE) for the notices
+and commercial contact.

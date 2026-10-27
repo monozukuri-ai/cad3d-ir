@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### cad3d-ir-icad 0.3.0 (new)
+
+- New workspace member `packages/cad3d-ir-icad`: an importer for iCAD SX
+  models (`.icd`) through `icadkit[preview]>=0.3.8`. Saved final bodies
+  (and CSG results or native primitives when a part has none) become exact
+  OCCT solids placed by the saved part frames; the package has one product per
+  part record, the part tree as occurrences, one GLB visualization with meshes
+  shared between identical parts, optional BREP resources, and `export_step`
+  for a STEP assembly of the same solids. External references, unqualified
+  versions, unconverted bodies, palette colours and the 2D views of the file
+  are reported through `ICD_*` diagnostics and statistics. PolyForm
+  Noncommercial, following icadkit.
+
 ## 0.3.0 — 2026-10-25
 
 ### cad3d-ir (core, IR schema 0.2.0)
