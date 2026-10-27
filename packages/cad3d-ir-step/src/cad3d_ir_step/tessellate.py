@@ -16,9 +16,11 @@ from typing import Any
 from cad3d_ir.mesh.geometry import Bounds, extend_bounds
 from OCP.Bnd import Bnd_Box
 from OCP.BRep import BRep_Tool
+from OCP.BRepAdaptor import BRepAdaptor_Curve
 from OCP.BRepBndLib import BRepBndLib
 from OCP.BRepLib import BRepLib_ToolTriangulatedShape
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
+from OCP.GCPnts import GCPnts_TangentialDeflection
 from OCP.gp import gp_TrsfForm
 from OCP.IMeshTools import IMeshTools_Parameters
 from OCP.Precision import Precision
@@ -193,7 +195,12 @@ def mesh_shape(
         result.edge_count = edge_map.Extent()
         for pick_id in range(1, edge_map.Extent() + 1):
             edge = TopoDS.Edge_s(edge_map.FindKey(pick_id))
-            polyline = _edge_polyline(edge, faces_by_edge)
+            polyline = _edge_polyline(
+                edge,
+                faces_by_edge,
+                linear_deflection=float(linear_deflection),
+                angular_deflection=float(angular_deflection),
+            )
             if polyline is None:
                 result.failed_edges += 1
                 continue
@@ -202,10 +209,22 @@ def mesh_shape(
     return result
 
 
-def _edge_polyline(edge: Any, faces_by_edge: Any) -> list[float] | None:
-    if not faces_by_edge.Contains(edge):
-        return None
-    face = TopoDS.Face_s(faces_by_edge.FindFromKey(edge).First())
+def _edge_polyline(
+    edge: Any,
+    faces_by_edge: Any,
+    *,
+    linear_deflection: float,
+    angular_deflection: float,
+) -> list[float] | None:
+    faces = faces_by_edge.FindFromKey(edge) if faces_by_edge.Contains(edge) else None
+    if faces is None or faces.IsEmpty():
+        # A free edge (the wireframe curves of IGES drawings, construction
+        # lines): there is no face triangulation to borrow the polygon from,
+        # so the curve itself is discretised. ``MapShapesAndAncestors``
+        # registers such edges with an empty ancestor list, and ``First()``
+        # on it raised Standard_NoSuchObject before.
+        return _free_edge_polyline(edge, linear_deflection, angular_deflection)
+    face = TopoDS.Face_s(faces.First())
     location = TopLoc_Location()
     triangulation = BRep_Tool.Triangulation_s(face, location)
     if triangulation is None:
@@ -220,6 +239,43 @@ def _edge_polyline(edge: Any, faces_by_edge: Any) -> list[float] | None:
         point = triangulation.Node(polygon.Node(index))
         if not identity:
             point = point.Transformed(transformation)
+        positions.extend((point.X(), point.Y(), point.Z()))
+    return positions
+
+
+def _free_edge_polyline(
+    edge: Any, linear_deflection: float, angular_deflection: float
+) -> list[float] | None:
+    """Points along an edge that belongs to no face.
+
+    The polygon stored by ``BRepMesh`` is used when present; otherwise the
+    curve is discretised with the same deflections as the faces.
+    """
+    if BRep_Tool.Degenerated_s(edge):
+        return None
+    location = TopLoc_Location()
+    polygon = BRep_Tool.Polygon3D_s(edge, location)
+    if polygon is not None and polygon.NbNodes() >= 2:
+        transformation = location.Transformation()
+        identity = transformation.Form() == gp_TrsfForm.gp_Identity
+        nodes = polygon.Nodes()
+        positions: list[float] = []
+        for index in range(nodes.Lower(), nodes.Upper() + 1):
+            point = nodes.Value(index)
+            if not identity:
+                point = point.Transformed(transformation)
+            positions.extend((point.X(), point.Y(), point.Z()))
+        return positions
+    curve = BRepAdaptor_Curve(edge)  # points come out in the edge's placement
+    discretised = GCPnts_TangentialDeflection(
+        curve, angular_deflection, linear_deflection, 2
+    )
+    count = discretised.NbPoints()
+    if count < 2:
+        return None
+    positions = []
+    for index in range(1, count + 1):
+        point = discretised.Value(index)
         positions.extend((point.X(), point.Y(), point.Z()))
     return positions
 

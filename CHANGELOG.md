@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### cad3d-ir-step 0.3.1
+
+- Free edges mesh again. Wireframe IGES files (drawing curves, construction
+  lines; 318 of the 958 edges of a RICOH DESIGNBASE part in production) have
+  edges that belong to no face. `TopExp::MapShapesAndAncestors` registers
+  them with an empty face list and the edge extraction called `First()` on
+  it, so the whole import failed with `Standard_NoSuchObject:
+  NCollection_List::First`. Such edges now use the polygon `BRepMesh` stored
+  for them, or are discretised from the curve with the same deflections.
+
 ### cad3d-ir-icad 0.3.0 (new)
 
 - New workspace member `packages/cad3d-ir-icad`: an importer for iCAD SX
