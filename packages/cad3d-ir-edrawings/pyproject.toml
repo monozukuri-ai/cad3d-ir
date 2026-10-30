@@ -1,0 +1,74 @@
+[project]
+name = "cad3d-ir-edrawings"
+version = "0.3.0"
+description = "eDrawings (EPRT/EASM) importer for cad3d-ir through edrawings-kit's display bundles"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [
+    { name = "neka-nat", email = "nekanat.stock@gmail.com" },
+]
+keywords = [
+    "3d-cad",
+    "easm",
+    "edrawings",
+    "eprt",
+    "gltf",
+    "hsf",
+    "solidworks",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
+]
+dependencies = [
+    "cad3d-ir>=0.3,<0.4",
+    "edrawings-kit>=0.2,<0.3",
+]
+
+[project.urls]
+Homepage = "https://github.com/monozukuri-ai/cad3d-ir"
+Repository = "https://github.com/monozukuri-ai/cad3d-ir/tree/main/packages/cad3d-ir-edrawings"
+Issues = "https://github.com/monozukuri-ai/cad3d-ir/issues"
+
+[project.scripts]
+cad3d-ir-edrawings = "cad3d_ir_edrawings.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.8.15,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4",
+    "ruff>=0.8",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[tool.uv.sources]
+cad3d-ir = { workspace = true }
+
+[tool.uv.build-backend]
+source-include = [
+    "tests/**",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

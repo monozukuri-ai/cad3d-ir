@@ -10,6 +10,7 @@ resolution-markers = [
 [manifest]
 members = [
     "cad3d-ir",
+    "cad3d-ir-edrawings",
     "cad3d-ir-icad",
     "cad3d-ir-sldprt",
     "cad3d-ir-step",
@@ -58,6 +59,35 @@ dev = [
     { name = "pytest", specifier = ">=8.4" },
     { name = "pytest-cov", specifier = ">=6" },
     { name = "ruff", specifier = ">=0.8" },
+]
+
+[[package]]
+name = "cad3d-ir-edrawings"
+version = "0.3.0"
+source = { editable = "packages/cad3d-ir-edrawings" }
+dependencies = [
+    { name = "cad3d-ir" },
+    { name = "edrawings-kit" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "ruff" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cad3d-ir", editable = "." },
+    { name = "edrawings-kit", specifier = ">=0.2,<0.3" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.4" },
+    { name = "ruff", specifier = ">=0.8" },
+    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0" },
 ]
 
 [[package]]
@@ -122,7 +152,7 @@ dev = [
 
 [[package]]
 name = "cad3d-ir-step"
-version = "0.3.0"
+version = "0.3.1"
 source = { editable = "packages/cad3d-ir-step" }
 dependencies = [
     { name = "cad3d-ir" },
@@ -332,6 +362,17 @@ wheels = [
 [package.optional-dependencies]
 toml = [
     { name = "tomli", marker = "python_full_version <= '3.11'" },
+]
+
+[[package]]
+name = "edrawings-kit"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/9c/81/07e3a5496738a6fc56bdcc9807e21092f8090705aea6520f2d8dd4b2f184/edrawings_kit-0.2.0.tar.gz", hash = "sha256:f120c229610c98aa65b5e12f35405022af37d68777adcd5c230f920319d003f3", size = 372905, upload-time = "2026-10-30T05:16:41.839Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/45/10/1630a760957186707d9364f3aba7e0519728790ff58d8a0abed42e4d0c3c/edrawings_kit-0.2.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:9f4c5912dff4d7f5a69c0397241df6bd467dee5135d7ff4704e8fa032db4f56f", size = 1311326, upload-time = "2026-10-30T05:16:36.791Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/96/0c8854f265bfc98cf8983763a6d35839d7627416695000ac57806895e911/edrawings_kit-0.2.0-cp310-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:80e9afd40b70b1e4a8ed0b0c3eea1b054e5e3f14cb79c48f40201d1127719f2f", size = 1403262, upload-time = "2026-10-30T05:16:38.519Z" },
+    { url = "https://files.pythonhosted.org/packages/48/08/af65c0af52c9b4807b1fd94a47f65a5cb559fd512f0d3f7dea98a51ed827/edrawings_kit-0.2.0-cp310-abi3-win_amd64.whl", hash = "sha256:f8cef70beacd19b19e86c9bfa2cb5beed1a19ded21e09d54722128662b5ce2a3", size = 1151129, upload-time = "2026-10-30T05:16:40.256Z" },
 ]
 
 [[package]]

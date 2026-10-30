@@ -52,6 +52,13 @@ through [icadkit](https://github.com/monozukuri-ai/icadkit): the final
 bodies iCAD saved with each part become exact OCCT solids placed by the saved
 part frames, written as the same GLB layout and, through `export_step`, as a
 STEP assembly. It follows icadkit's licensing (PolyForm Noncommercial).
+The `cad3d-ir-edrawings` member reads eDrawings parts and assemblies
+(`.eprt`, `.easm`) through
+[edrawings-kit](https://github.com/monozukuri-ai/edrawings-kit): the display
+bundle the kit reads (bodies, estimated placements, colours, the shown saved
+configuration, the preview image) becomes products, occurrences and the same
+GLB layout, with vertex data shared between placements of the same part. It is
+MIT licensed like the core.
 
 ## Visualization meshes
 
@@ -126,6 +133,10 @@ uv run --package cad3d-ir-sldprt cad3d-ir-sldprt part.SLDPRT output/
 # iCAD SX adapter
 uv run --package cad3d-ir-icad pytest packages/cad3d-ir-icad/tests
 uv run --package cad3d-ir-icad cad3d-ir-icad model.icd output/ --step model.step
+
+# eDrawings adapter
+uv run --package cad3d-ir-edrawings pytest packages/cad3d-ir-edrawings/tests
+uv run --package cad3d-ir-edrawings cad3d-ir-edrawings frame.easm output/
 ```
 
 ## Minimal use
@@ -159,7 +170,8 @@ and abstraction gate are described in
 
 ## License
 
-`cad3d-ir` and `cad3d-ir-step` are MIT licensed. `packages/cad3d-ir-sldprt`
+`cad3d-ir`, `cad3d-ir-step` and `cad3d-ir-edrawings` are MIT licensed.
+`packages/cad3d-ir-sldprt`
 and `packages/cad3d-ir-icad` are licensed separately under the PolyForm
 Noncommercial License 1.0.0 by UnRobotics Inc., following sldkit and icadkit;
 see [the SOLIDWORKS adapter's LICENSE](packages/cad3d-ir-sldprt/LICENSE) and

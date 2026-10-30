@@ -12,6 +12,19 @@
   NCollection_List::First`. Such edges now use the polygon `BRepMesh` stored
   for them, or are discretised from the curve with the same deflections.
 
+### cad3d-ir-edrawings 0.3.0 (new)
+
+- New workspace member `packages/cad3d-ir-edrawings`: an importer for
+  eDrawings parts and assemblies (`.eprt`, `.easm`; `.edrw` drawings on
+  request, 3D bodies only) through `edrawings-kit>=0.2`. The kit's display
+  bundle (bodies as packed buffers, estimated placements, colours, the shown
+  saved configuration, the preview image) becomes one package: placements that
+  share a component name, path and matrix form occurrences, placements of the
+  same bodies share a `part` product, and one GLB in millimetres shares vertex
+  data between them. Coordinates keep the model's axes and are scaled by the
+  stream's `model_units` (SOLIDWORKS writers store metres). Reported through
+  `EDRAWINGS_*` diagnostics and statistics; MIT, like the core.
+
 ### cad3d-ir-icad 0.3.0 (new)
 
 - New workspace member `packages/cad3d-ir-icad`: an importer for iCAD SX

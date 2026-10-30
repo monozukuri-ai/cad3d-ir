@@ -73,6 +73,27 @@ preview image with a `SLDPRT_PREVIEW_ONLY` warning.
 Its tests build SolidWorks documents in memory with the frame and table
 grammar sldkit's tests use, so the repository ships no CAD file.
 
+## eDrawings files through edrawings-kit display bundles
+
+`packages/cad3d-ir-edrawings` maps eDrawings parts and assemblies (`.eprt`,
+`.easm`: HOOPS Stream Files, alone or in a ZIP container) to the IR through
+[edrawings-kit](https://github.com/monozukuri-ai/edrawings-kit). The kit's
+`read_display` returns every body once as packed `float32`/`uint32` buffers in
+the model's own units and every placement with a row-vector matrix, a component
+name and path, a colour and its visibility, for one saved configuration and
+display state. The adapter groups placements by name, path and matrix, groups
+placements of the same bodies into one `part` product, and writes one GLB in
+which each body is one vertex set, each distinct `(bodies, colours)` is one
+mesh and each placement is one node with the converted column-vector matrix.
+Positions and translations are scaled by the stream's `model_units`
+(millimetres per unit; SOLIDWORKS writers omit it and store metres); axes are
+kept. Placements are estimates, reported by `EDRAWINGS_PLACEMENT_ESTIMATED`.
+
+Self-authored eDrawings 2026 fixtures (an OCCT box in millimetres, metres and
+inches, and the `cad3d-ir-step` reference assembly) pin the unit rule and the
+grouping; the rest of the suite builds HSF streams in memory. The package is
+MIT, like the core.
+
 ## iCAD SX models through icadkit saved bodies
 
 `packages/cad3d-ir-icad` maps one `.icd` file (iCAD SX keeps parts, the
