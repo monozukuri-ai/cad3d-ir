@@ -58,7 +58,14 @@ The `cad3d-ir-edrawings` member reads eDrawings parts and assemblies
 bundle the kit reads (bodies, estimated placements, colours, the shown saved
 configuration, the preview image) becomes products, occurrences and the same
 GLB layout, with vertex data shared between placements of the same part. It is
-MIT licensed like the core.
+MIT licensed like the core. The `cad3d-ir-parasolid` member reads Parasolid
+transmit files (`.x_t`, `.x_b`, `.xmt_txt`, `.xmt_bin`) through
+[parasolid-kit](https://github.com/monozukuri-ai/parasolid-kit): the file's
+own B-Rep becomes exact OCCT bodies (metres to millimetres, faces that cannot
+be built are dropped and reported), placed by the assembly instances the file
+stores, coloured and named from the system attributes, written as the same
+GLB layout and, through `export_step`, as a STEP assembly. It is MIT licensed
+like the core.
 
 ## Visualization meshes
 
@@ -137,6 +144,10 @@ uv run --package cad3d-ir-icad cad3d-ir-icad model.icd output/ --step model.step
 # eDrawings adapter
 uv run --package cad3d-ir-edrawings pytest packages/cad3d-ir-edrawings/tests
 uv run --package cad3d-ir-edrawings cad3d-ir-edrawings frame.easm output/
+
+# Parasolid adapter
+uv run --package cad3d-ir-parasolid pytest packages/cad3d-ir-parasolid/tests
+uv run --package cad3d-ir-parasolid cad3d-ir-parasolid part.x_t output/ --step part.step
 ```
 
 ## Minimal use
@@ -170,7 +181,8 @@ and abstraction gate are described in
 
 ## License
 
-`cad3d-ir`, `cad3d-ir-step` and `cad3d-ir-edrawings` are MIT licensed.
+`cad3d-ir`, `cad3d-ir-step`, `cad3d-ir-edrawings` and `cad3d-ir-parasolid`
+are MIT licensed.
 `packages/cad3d-ir-sldprt`
 and `packages/cad3d-ir-icad` are licensed separately under the PolyForm
 Noncommercial License 1.0.0 by UnRobotics Inc., following sldkit and icadkit;

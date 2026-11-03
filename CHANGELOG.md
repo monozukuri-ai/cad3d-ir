@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### cad3d-ir-parasolid 0.3.0 (new)
+
+- New workspace member `packages/cad3d-ir-parasolid`: an importer for
+  Parasolid transmit files (`.x_t`, `.x_b`, `.xmt_txt`, `.xmt_bin`) through
+  `parasolid-kit[occt]>=0.3.12`. The file's own B-Rep is converted to exact
+  OCCT bodies (metres to millimetres; the faces whose construction fails are
+  dropped and reported, the body is kept as an open shell, and a shape that
+  OCCT's BRepCheck rejects is shown as built with a warning), the assembly
+  instances the file stores become occurrences with their transforms, the
+  `SDL/TYSA_COLOUR` and `SDL/TYSA_NAME` attributes become body and face
+  colours and body names, and one GLB in millimetres shares a mesh between
+  the placements of a body. `export_step` writes the converted bodies as a
+  named, coloured STEP assembly. Files whose schema key no built-in profile
+  covers fail closed with `PARASOLID_SCHEMA_UNSUPPORTED`, naming the stream's
+  own key (read with parasolid-kit's header inspection, since the common
+  header's `SCH=` line names the writer's native schema instead); the
+  writer's application and Parasolid version are reported from the common
+  header. Reported through `PARASOLID_*` diagnostics and statistics; MIT,
+  like the core.
+
 ### cad3d-ir-step 0.3.1
 
 - Free edges mesh again. Wireframe IGES files (drawing curves, construction

@@ -73,6 +73,7 @@ members = [
     "packages/cad3d-ir-sldprt",
     "packages/cad3d-ir-icad",
     "packages/cad3d-ir-edrawings",
+    "packages/cad3d-ir-parasolid",
 ]
 
 [tool.ruff]

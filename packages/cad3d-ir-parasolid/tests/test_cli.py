@@ -1,0 +1,47 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from cad3d_ir_parasolid.cli import main
+
+
+def test_cli_writes_manifest_diagnostics_and_step(
+    box_path: Path, tmp_path: Path, capsys
+) -> None:
+    output = tmp_path / "package"
+    diagnostics = tmp_path / "diagnostics.json"
+    step = tmp_path / "box.step"
+    assert (
+        main(
+            [
+                str(box_path),
+                str(output),
+                "--diagnostics",
+                str(diagnostics),
+                "--step",
+                str(step),
+                "--brep",
+            ]
+        )
+        == 0
+    )
+    captured = capsys.readouterr().out
+    assert "12 triangles, 1 of 1 bodies converted" in captured
+    assert "1 placed bodies, 0 skipped" in captured
+    manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["format"] == "cad3d-ir"
+    assert any(r["uri"].endswith(".brep") for r in manifest["resources"])
+    payload = json.loads(diagnostics.read_text(encoding="utf-8"))
+    assert payload["statistics"]["schema_key"] == "SCH_3000000_30000"
+    assert {d["code"] for d in payload["diagnostics"]} >= {"PARASOLID_EXACT_BREP"}
+    assert step.stat().st_size > 0
+    assert main([str(box_path), str(output)]) == 2
+    assert main([str(box_path), str(output), "--overwrite", "--no-mesh"]) == 0
+
+
+def test_cli_reports_failures(tmp_path: Path, unsupported_path: Path, capsys) -> None:
+    assert main([str(tmp_path / "missing.x_t"), str(tmp_path / "out")]) == 1
+    assert "error:" in capsys.readouterr().err
+    assert main([str(unsupported_path), str(tmp_path / "out2"), "--strict"]) == 1
+    assert "unsupported schema key" in capsys.readouterr().err
