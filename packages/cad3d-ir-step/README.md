@@ -6,7 +6,9 @@ assembly occurrences, local placements, names and surface colours, exports
 each reusable leaf shape as an external OCCT B-Rep resource and, on request,
 tessellates everything into glTF binary display meshes. Since 0.3.0 it also
 writes STEP: a STEP or IGES document re-exported in another schema or unit,
-or a faceted STEP built from the triangles of a visualization GLB.
+or a faceted STEP built from the triangles of a visualization GLB. Since 0.4.0
+that faceted STEP can also be written straight from the mesh topology, without
+OCCT sewing, so large assemblies are no longer limited to 20,000 triangles.
 
 The runtime uses the official `cadquery-ocp-novtk` binding because conversion
 does not require VTK or a visualization stack.
@@ -72,11 +74,48 @@ instead of 2.4 KB), which not every CAD reads. Mesh results always carry
 `STEP_MESH_SOLID_FACETED` or `STEP_MESH_TESSELLATED`; open shells are reported
 as `STEP_MESH_FREE_EDGES`.
 
+### Writing a mesh directly
+
+```python
+from cad3d_ir.mesh import read_glb
+from cad3d_ir_step import estimate_mesh_step, write_mesh_step
+
+scene = read_glb(open("assembly.glb", "rb").read())
+estimate = estimate_mesh_step(scene)  # counted without writing
+if estimate.byte_length < 200 * 2**20:
+    result = write_mesh_step(scene, "assembly.step", schema="AP214")
+    print(result.parts, result.placements, result.solids, result.open_shells)
+```
+
+`write_mesh_step` (AP214 or AP242) builds the topology from the mesh instead
+of sewing OCCT faces, so its time grows linearly with the triangle count:
+
+- each mesh is written once as a part and every node that places it becomes an
+  assembly component; a placement that mirrors or scales its mesh is written
+  as its own part (`STEP_MESH_PLACEMENTS_BAKED`);
+- the vertex sets of a mesh are welded on identical positions, so faces that
+  were tessellated separately join again; triangles that share an edge share
+  one `EDGE_CURVE` and are oriented consistently;
+- a part whose components all close is written as outward-oriented
+  `MANIFOLD_SOLID_BREP`s; otherwise as a `SHELL_BASED_SURFACE_MODEL`
+  (`STEP_MESH_FREE_EDGES`);
+- every triangle is an `ADVANCED_FACE` on a `PLANE` with `LINE` edges (about
+  600–800 bytes per written triangle; `edge_curve="polyline"` is about a fifth
+  smaller but slower to read in OCCT);
+- each solid or surface model takes its most common colour and triangles of
+  another colour are styled individually; names come from the GLB meshes and
+  nodes.
+
+`estimate_mesh_step` returns the triangles that would be written (each mesh
+once), the triangles once every placement is expanded, and a rough size
+(`DIRECT_BYTES_PER_TRIANGLE` per triangle).
+
 ```console
 cad3d-ir-step-export assembly.step assembly-ap203.step --schema AP203
 cad3d-ir-step-export part.igs part.step --unit inch --verify
 cad3d-ir-step-export preview.glb part.step --max-triangles 20000
 cad3d-ir-step-export preview.glb part.step --mode tessellated
+cad3d-ir-step-export preview.glb assembly.step --mode direct
 ```
 
 ## Options

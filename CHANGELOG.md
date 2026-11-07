@@ -22,11 +22,33 @@
   header. Reported through `PARASOLID_*` diagnostics and statistics; MIT,
   like the core.
 
+### cad3d-ir-step 0.4.0
+
+- `write_mesh_step` writes the triangles of a cad3d-ir GLB scene as STEP
+  (AP214, AP242) without OCCT sewing, so its time grows linearly with the
+  triangle count and large meshes are no longer bound by the 20,000-triangle
+  cap of `mesh_to_step`. Each mesh is written once as a part and every node
+  that places it becomes an assembly component; a placement that mirrors or
+  scales its mesh is written as its own part (`STEP_MESH_PLACEMENTS_BAKED`).
+  The vertex sets of a mesh are welded on identical positions, triangles that
+  share an edge share one `EDGE_CURVE` and are oriented consistently, and a
+  part whose components all close becomes outward-oriented
+  `MANIFOLD_SOLID_BREP`s (otherwise a `SHELL_BASED_SURFACE_MODEL`, reported as
+  `STEP_MESH_FREE_EDGES`). Every triangle is an `ADVANCED_FACE` on a `PLANE`
+  with `LINE` edges (`edge_curve="polyline"` for two-point `POLYLINE`s).
+  Colours (the most common per body, the others per face) and names follow
+  the GLB.
+- `estimate_mesh_step` counts the triangles that would be written, the
+  triangles once every placement is expanded and a rough size
+  (`DIRECT_BYTES_PER_TRIANGLE`).
+- `cad3d-ir-step-export --mode direct` writes GLB sources this way.
+  `--max-triangles` now defaults to the 20,000 cap only for the sewn and
+  tessellated modes.
+
 ### cad3d-ir-step 0.3.1
 
 - Free edges mesh again. Wireframe IGES files (drawing curves, construction
-  lines; 318 of the 958 edges of a RICOH DESIGNBASE part in production) have
-  edges that belong to no face. `TopExp::MapShapesAndAncestors` registers
+  lines) can have edges that belong to no face. `TopExp::MapShapesAndAncestors` registers
   them with an empty face list and the edge extraction called `First()` on
   it, so the whole import failed with `Standard_NoSuchObject:
   NCollection_List::First`. Such edges now use the polygon `BRepMesh` stored

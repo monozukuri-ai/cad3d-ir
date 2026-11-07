@@ -8,8 +8,9 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from cad3d_ir.mesh import GlbReadError
+from cad3d_ir.mesh import GlbReadError, read_glb
 
+from cad3d_ir_step.direct import estimate_mesh_step, write_mesh_step
 from cad3d_ir_step.errors import MeshTooLargeError, StepExportError
 from cad3d_ir_step.export import (
     DEFAULT_MAX_TRIANGLES,
@@ -58,15 +59,22 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--mode",
-        choices=("solid", "tessellated"),
+        choices=("solid", "tessellated", "direct"),
         default="solid",
-        help="GLB sources: sewn solids (default) or AP242 triangulated faces",
+        help=(
+            "GLB sources: sewn solids (default), AP242 triangulated faces, or "
+            "direct (B-rep written from the mesh topology, one part per mesh)"
+        ),
     )
     parser.add_argument(
         "--max-triangles",
         type=int,
-        default=DEFAULT_MAX_TRIANGLES,
-        help=f"GLB sources: refuse meshes above this many triangles (default {DEFAULT_MAX_TRIANGLES}; 0 for no cap)",  # noqa: E501
+        default=None,
+        help=(
+            "GLB sources: refuse meshes above this many triangles (0 for no cap; "
+            f"default {DEFAULT_MAX_TRIANGLES} for solid/tessellated, none for direct, "
+            "which counts each mesh once)"
+        ),
     )
     parser.add_argument(
         "--name", help="GLB sources: name of the single body or assembly root"
@@ -83,13 +91,56 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run the STEP writer CLI."""
     args = _parser().parse_args(argv)
     try:
-        if args.source.suffix.lower() in _GLB_SUFFIXES:
+        if args.source.suffix.lower() in _GLB_SUFFIXES and args.mode == "direct":
+            if args.schema == "AP203":
+                raise ValueError("--mode direct writes AP214 or AP242, not AP203")
+            scene = read_glb(args.source.read_bytes())
+            if args.max_triangles:
+                estimate = estimate_mesh_step(scene)
+                if estimate.triangles > args.max_triangles:
+                    raise MeshTooLargeError(
+                        triangles=estimate.triangles, limit=args.max_triangles
+                    )
+            direct = write_mesh_step(
+                scene, args.output, schema=args.schema, name=args.name
+            )
+            result = direct
+            summary = (
+                f"wrote {args.output}: {direct.parts} parts, {direct.placements} "
+                f"placements, {direct.triangles_written} triangles "
+                f"({direct.triangles_placed} placed), {direct.solids} solids, "
+                f"{direct.open_shells} open shells, {direct.byte_length} bytes "
+                f"({direct.schema}, direct)"
+            )
+            counts = {
+                "parts": direct.parts,
+                "placements": direct.placements,
+                "baked_placements": direct.baked_placements,
+                "triangles": direct.triangles_written,
+                "triangles_placed": direct.triangles_placed,
+                "vertices": direct.vertices_written,
+                "degenerate_triangles": direct.degenerate_triangles,
+                "solids": direct.solids,
+                "shells": direct.shells,
+                "open_shells": direct.open_shells,
+                "free_edges": direct.boundary_edges + direct.split_edges,
+                "styled_faces": direct.styled_faces,
+                "byte_length": direct.byte_length,
+                "schema": direct.schema,
+                "mode": "direct",
+            }
+        elif args.source.suffix.lower() in _GLB_SUFFIXES:
+            cap = (
+                DEFAULT_MAX_TRIANGLES
+                if args.max_triangles is None
+                else args.max_triangles or None
+            )
             result = mesh_to_step(
                 args.source.read_bytes(),
                 args.output,
                 schema=args.schema,
                 mode=args.mode,
-                max_triangles=args.max_triangles or None,
+                max_triangles=cap,
                 name=args.name,
             )
             summary = (

@@ -118,7 +118,7 @@ limit_profile="service", limits=None)`:
   occurrences; they stay out of the GLB.
 - `limit_profile` is the edrawings-kit resource profile: `service` keeps the
   kit's traversal, vertex and instance caps for shared servers but lifts the
-  container and XML sizes production assemblies reach (a 2 MB `materials.xml`
+  container and XML sizes large assemblies reach (a 2 MB `materials.xml`
   holds more than the kit's default 20,000 elements); `desktop` allows larger
   inputs. `limits` passes an explicit `edrawings_kit.Limits`. Exceeding a limit
   raises `EdrawingsLimitError`.
@@ -149,7 +149,7 @@ limit_profile="service", limits=None)`:
 
 - Parts and assemblies written by eDrawings (SOLIDWORKS `SWeModels-*` writers,
   HOOPS Exchange based writers such as eDrawings 2026, and older Pro/ENGINEER
-  publishers down to HSF 8.05 in the corpus) yield bodies and placements.
+  publishers down to HSF 8.05) yield bodies and placements.
   Drawings yield only the 3D bodies they may carry; their sheets are a later
   stage.
 - Placements are estimated from the scene graph (see above). One saved
