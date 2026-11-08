@@ -13,7 +13,8 @@ be written as a STEP assembly (`export_step`).
 What the adapter reports but does not map: colours (iCAD stores palette
 indices), the 2D drawing views stored in the same file, and parts that are
 external references to other `.icd` files. Versions icadkit has not qualified
-(for example V8L4 and later) fail closed with `ICD_VERSION_UNQUALIFIED`.
+(V8L5 and later with icadkit 0.3.14, which added V8L4; see
+`icadkit.qualified_versions()`) fail closed with `ICD_VERSION_UNQUALIFIED`.
 
 The distribution depends on `cad3d-ir`, `cad3d-ir-step` (tessellation and the
 STEP writer) and `icadkit[preview]`; the core distribution does not depend on

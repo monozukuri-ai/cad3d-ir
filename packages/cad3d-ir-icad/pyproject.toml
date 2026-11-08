@@ -1,6 +1,6 @@
 [project]
 name = "cad3d-ir-icad"
-version = "0.3.0"
+version = "0.3.1"
 description = "iCAD SX part/assembly (ICD) importer for cad3d-ir through icadkit's saved final bodies"
 readme = "README.md"
 license = "PolyForm-Noncommercial-1.0.0"
@@ -31,7 +31,8 @@ classifiers = [
 ]
 dependencies = [
     "cad3d-ir>=0.3,<0.4",
-    "cad3d-ir-step>=0.3,<0.4",
+    # 0.4 adds the direct mesh writer and keeps export / tessellate unchanged
+    "cad3d-ir-step>=0.3,<0.5",
     "icadkit[preview]>=0.3.8,<0.4",
 ]
 

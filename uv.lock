@@ -93,7 +93,7 @@ dev = [
 
 [[package]]
 name = "cad3d-ir-icad"
-version = "0.3.0"
+version = "0.3.1"
 source = { editable = "packages/cad3d-ir-icad" }
 dependencies = [
     { name = "cad3d-ir" },
@@ -124,7 +124,7 @@ dev = [
 
 [[package]]
 name = "cad3d-ir-parasolid"
-version = "0.3.0"
+version = "0.3.1"
 source = { editable = "packages/cad3d-ir-parasolid" }
 dependencies = [
     { name = "cad3d-ir" },

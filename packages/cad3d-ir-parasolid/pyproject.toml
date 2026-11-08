@@ -1,6 +1,6 @@
 [project]
 name = "cad3d-ir-parasolid"
-version = "0.3.0"
+version = "0.3.1"
 description = "Parasolid transmit-file (X_T / X_B) importer for cad3d-ir through parasolid-kit"
 readme = "README.md"
 license = "MIT"
@@ -32,7 +32,8 @@ classifiers = [
 ]
 dependencies = [
     "cad3d-ir>=0.3,<0.4",
-    "cad3d-ir-step>=0.3.1,<0.4",
+    # 0.4 adds the direct mesh writer and keeps export / tessellate unchanged
+    "cad3d-ir-step>=0.3.1,<0.5",
     # 0.3.11: partial conversion, attributes (colours and names), spun surfaces,
     # instance placement, the schema families of other Parasolid builds and the
     # standard keys of Parasolid 9 to 16. 0.3.12: partial conversion returns a

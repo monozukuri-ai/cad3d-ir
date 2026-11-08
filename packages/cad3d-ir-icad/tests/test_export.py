@@ -52,7 +52,7 @@ def test_export_step_writes_a_named_assembly_that_reads_back(
 
 
 def test_export_step_accepts_a_read_source_and_refuses_empty_models(
-    box_path: Path, external_path: Path, v8l4_path: Path, tmp_path: Path
+    box_path: Path, external_path: Path, v8l5_path: Path, tmp_path: Path
 ) -> None:
     source = read_source(box_path)
     result = export_step(source, tmp_path / "from-source.step", schema="AP203")
@@ -60,6 +60,6 @@ def test_export_step_accepts_a_read_source_and_refuses_empty_models(
     with pytest.raises(IcadExportError, match="no part"):
         export_step(external_path, tmp_path / "external.step")
     with pytest.raises(IcadExportError, match="qualified"):
-        export_step(v8l4_path, tmp_path / "v8l4.step")
+        export_step(v8l5_path, tmp_path / "v8l5.step")
     with pytest.raises(ValueError):
         export_step(box_path, tmp_path / "bad.step", schema="AP999")  # type: ignore[arg-type]

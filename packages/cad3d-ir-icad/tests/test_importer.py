@@ -60,12 +60,12 @@ def test_probe_uses_the_header_signature(box_path: Path, tmp_path: Path) -> None
     assert not is_icd_signature(b"MOD0" + b"\0" * 300)
 
 
-def test_version_label_reads_the_header_bytes(box_path: Path, v8l4_path: Path) -> None:
+def test_version_label_reads_the_header_bytes(box_path: Path, v8l5_path: Path) -> None:
     assert version_label(b"\0\x08\0\x03") == "V8L3"
     assert version_label(b"\0\x01\0\x09") == "V1L9"
     assert version_label(b"\x01\0\0\x03") is None
     assert read_source(box_path, read_shapes=False).version_label == "V7L7"
-    assert read_source(v8l4_path, read_shapes=False).version_label == "V8L4"
+    assert read_source(v8l5_path, read_shapes=False).version_label == "V8L5"
 
 
 def test_box_imports_as_a_two_product_tree_with_one_shared_mesh(
@@ -149,20 +149,20 @@ def test_external_reference_is_reported_and_kept_as_a_dependency(
         _import(external_path, tmp_path / "strict", strict=True)
 
 
-def test_unqualified_version_fails_closed(v8l4_path: Path, tmp_path: Path) -> None:
-    result = _import(v8l4_path, tmp_path / "out")
+def test_unqualified_version_fails_closed(v8l5_path: Path, tmp_path: Path) -> None:
+    result = _import(v8l5_path, tmp_path / "out")
     assert not result.package.visualizations
     (diagnostic,) = [
         d for d in result.diagnostics if d.code == "ICD_VERSION_UNQUALIFIED"
     ]
     assert diagnostic.severity == "error" and diagnostic.details == {
-        "version_label": "V8L4",
+        "version_label": "V8L5",
         "byte_order": "little",
     }
     assert result.statistics["version_unqualified"] is True
-    assert result.statistics["icd_version"] == "V8L4"
+    assert result.statistics["icd_version"] == "V8L5"
     with pytest.raises(IcadReadError, match="unqualified"):
-        _import(v8l4_path, tmp_path / "strict", strict=True)
+        _import(v8l5_path, tmp_path / "strict", strict=True)
 
 
 def test_two_d_document_has_views_but_no_solids(

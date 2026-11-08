@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### cad3d-ir-icad 0.3.1
+
+- Accepts `cad3d-ir-step` 0.4, which adds the direct mesh writer and leaves
+  the `export` and `tessellate` modules this adapter uses unchanged. The
+  0.3.0 pin (`<0.4`) made the adapter uninstallable next to cad3d-ir-step
+  0.4.0.
+- The README and the tests follow icadkit 0.3.14, which qualified V8L4: the
+  example of a version that fails closed with `ICD_VERSION_UNQUALIFIED` is now
+  V8L5. Which versions are qualified is icadkit's
+  (`icadkit.qualified_versions()`), not the adapter's.
+
+### cad3d-ir-parasolid 0.3.1
+
+- Accepts `cad3d-ir-step` 0.4 for the same reason as cad3d-ir-icad 0.3.1.
+
 ### cad3d-ir-parasolid 0.3.0 (new)
 
 - New workspace member `packages/cad3d-ir-parasolid`: an importer for

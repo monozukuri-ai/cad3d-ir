@@ -33,10 +33,14 @@ def sheet_path(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def v8l4_path(tmp_path: Path, box_path: Path) -> Path:
-    """The box document with its version bytes set to an unqualified V8L4."""
+def v8l5_path(tmp_path: Path, box_path: Path) -> Path:
+    """The box document with its version bytes set to an unqualified V8L5.
+
+    icadkit 0.3.14 qualified V8L4, so the version after the last qualified one
+    stands in for a release icadkit has not seen.
+    """
     data = bytearray(box_path.read_bytes())
-    data[12:16] = b"\0\x08\0\x04"
-    path = tmp_path / "box-v8l4.icd"
+    data[12:16] = b"\0\x08\0\x05"
+    path = tmp_path / "box-v8l5.icd"
     path.write_bytes(bytes(data))
     return path

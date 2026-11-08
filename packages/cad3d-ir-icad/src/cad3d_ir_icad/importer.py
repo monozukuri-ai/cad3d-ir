@@ -64,7 +64,7 @@ from cad3d_ir_icad.shapes import (
 )
 
 ADAPTER_NAME = "cad3d-ir-icad"
-ADAPTER_VERSION = "0.3.0"
+ADAPTER_VERSION = "0.3.1"
 SOURCE_FORMAT = "icd"
 BREP_MEDIA_TYPE = "application/vnd.opencascade.brep"
 BREP_ENCODING = "occt-brep-ascii-v1"
