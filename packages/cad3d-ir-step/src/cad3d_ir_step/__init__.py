@@ -2,8 +2,12 @@
 
 from cad3d_ir_step.direct import (
     DIRECT_BYTES_PER_TRIANGLE,
+    TESSELLATED_BYTES_PER_NORMAL,
+    TESSELLATED_BYTES_PER_TRIANGLE,
+    TESSELLATED_BYTES_PER_VERTEX,
     DirectStepResult,
     MeshStepEstimate,
+    Representation,
     estimate_mesh_step,
     write_mesh_step,
 )
@@ -26,11 +30,14 @@ from cad3d_ir_step.export import (
 from cad3d_ir_step.iges import IgesHeader, IgesImporter, inspect_iges_header
 from cad3d_ir_step.importer import StepImporter
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 __all__ = [
     "DEFAULT_MAX_TRIANGLES",
     "DIRECT_BYTES_PER_TRIANGLE",
+    "TESSELLATED_BYTES_PER_NORMAL",
+    "TESSELLATED_BYTES_PER_TRIANGLE",
+    "TESSELLATED_BYTES_PER_VERTEX",
     "DirectStepResult",
     "IgesHeader",
     "IgesImporter",
@@ -38,6 +45,7 @@ __all__ = [
     "MeshStepEstimate",
     "MeshStepResult",
     "MeshTooLargeError",
+    "Representation",
     "StepExportError",
     "StepExportResult",
     "StepImportError",

@@ -77,6 +77,21 @@ def _parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--representation",
+        choices=("brep", "tessellated"),
+        default="brep",
+        help=(
+            "--mode direct: planar B-rep faces (default) or AP242 tessellated "
+            "geometry (TRIANGULATED_FACE, about a tenth of the size; needs --schema "
+            "AP242)"
+        ),
+    )
+    parser.add_argument(
+        "--no-normals",
+        action="store_true",
+        help="--representation tessellated: leave out the vertex normals",
+    )
+    parser.add_argument(
         "--name", help="GLB sources: name of the single body or assembly root"
     )
     parser.add_argument(
@@ -96,13 +111,18 @@ def main(argv: Sequence[str] | None = None) -> int:
                 raise ValueError("--mode direct writes AP214 or AP242, not AP203")
             scene = read_glb(args.source.read_bytes())
             if args.max_triangles:
-                estimate = estimate_mesh_step(scene)
+                estimate = estimate_mesh_step(scene, representation=args.representation)
                 if estimate.triangles > args.max_triangles:
                     raise MeshTooLargeError(
                         triangles=estimate.triangles, limit=args.max_triangles
                     )
             direct = write_mesh_step(
-                scene, args.output, schema=args.schema, name=args.name
+                scene,
+                args.output,
+                schema=args.schema,
+                name=args.name,
+                representation=args.representation,
+                normals=not args.no_normals,
             )
             result = direct
             summary = (
@@ -110,9 +130,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 f"placements, {direct.triangles_written} triangles "
                 f"({direct.triangles_placed} placed), {direct.solids} solids, "
                 f"{direct.open_shells} open shells, {direct.byte_length} bytes "
-                f"({direct.schema}, direct)"
+                f"({direct.schema}, direct, {direct.representation})"
             )
             counts = {
+                "representation": direct.representation,
+                "tessellated_faces": direct.tessellated_faces,
                 "parts": direct.parts,
                 "placements": direct.placements,
                 "baked_placements": direct.baked_placements,

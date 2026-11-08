@@ -110,12 +110,28 @@ of sewing OCCT faces, so its time grows linearly with the triangle count:
 once), the triangles once every placement is expanded, and a rough size
 (`DIRECT_BYTES_PER_TRIANGLE` per triangle).
 
+`write_mesh_step(..., schema="AP242", representation="tessellated")` writes the
+same parts and placements as AP242 tessellated geometry instead of B-rep: one
+`COORDINATES_LIST` of welded points per part, a `TRIANGULATED_FACE` per vertex
+set of the source mesh (one CAD face, for writers that tessellate per face)
+with the mesh's own vertex normals (`normals=False` leaves them out), grouped
+into a `TESSELLATED_SOLID` where the triangles close and a `TESSELLATED_SHELL`
+elsewhere. It is about a tenth of the size of the B-rep form (60–70 bytes per
+triangle with normals, 35–40 without) and loads in seconds where the B-rep
+takes minutes, but CAD shows it as a mesh (a graphics body): there are no
+faces to edit or measure (`STEP_MESH_TESSELLATED`). Open CASCADE reads it with
+`read.step.tessellated` set to 1 (FreeCAD does so), eDrawings and other HOOPS
+Exchange readers directly. `estimate_mesh_step(scene,
+representation="tessellated")` sizes it from the `TESSELLATED_BYTES_PER_*`
+constants.
+
 ```console
 cad3d-ir-step-export assembly.step assembly-ap203.step --schema AP203
 cad3d-ir-step-export part.igs part.step --unit inch --verify
 cad3d-ir-step-export preview.glb part.step --max-triangles 20000
 cad3d-ir-step-export preview.glb part.step --mode tessellated
 cad3d-ir-step-export preview.glb assembly.step --mode direct
+cad3d-ir-step-export preview.glb mesh.step --mode direct --schema AP242 --representation tessellated
 ```
 
 ## Options

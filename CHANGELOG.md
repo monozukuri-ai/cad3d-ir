@@ -37,6 +37,25 @@
   header. Reported through `PARASOLID_*` diagnostics and statistics; MIT,
   like the core.
 
+### cad3d-ir-step 0.4.1
+
+- `write_mesh_step(..., schema="AP242", representation="tessellated")` writes
+  the parts and placements of the direct writer as AP242 tessellated geometry:
+  one `COORDINATES_LIST` of welded points per part, a `TRIANGULATED_FACE` per
+  vertex set of the source mesh carrying its vertex normals (`normals=False`
+  leaves them out), grouped into a `TESSELLATED_SOLID` where the triangles
+  close and a `TESSELLATED_SHELL` elsewhere, inside a
+  `TESSELLATED_SHAPE_REPRESENTATION`. The result reports
+  `representation` and `tessellated_faces`, and its first diagnostic is
+  `STEP_MESH_TESSELLATED` instead of `STEP_MESH_SOLID_FACETED`. About a tenth
+  of the size of the B-rep form; Open CASCADE reads it with
+  `read.step.tessellated` on, HOOPS Exchange readers (eDrawings) directly.
+- `estimate_mesh_step(scene, representation=..., normals=...)` sizes that
+  form from `TESSELLATED_BYTES_PER_TRIANGLE`, `TESSELLATED_BYTES_PER_VERTEX`
+  and `TESSELLATED_BYTES_PER_NORMAL`, and now reports the vertex count.
+- `cad3d-ir-step-export --mode direct` takes `--representation tessellated`
+  and `--no-normals`.
+
 ### cad3d-ir-step 0.4.0
 
 - `write_mesh_step` writes the triangles of a cad3d-ir GLB scene as STEP

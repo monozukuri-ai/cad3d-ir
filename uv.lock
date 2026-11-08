@@ -184,7 +184,7 @@ dev = [
 
 [[package]]
 name = "cad3d-ir-step"
-version = "0.4.0"
+version = "0.4.1"
 source = { editable = "packages/cad3d-ir-step" }
 dependencies = [
     { name = "cad3d-ir" },
