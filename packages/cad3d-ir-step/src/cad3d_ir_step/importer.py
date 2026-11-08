@@ -10,6 +10,7 @@ from cad3d_ir.constants import CURRENT_IR_VERSION
 from cad3d_ir.importers import ImportOptions
 from cad3d_ir.io import ResourceWriter
 from OCP.IFSelect import IFSelect_RetDone
+from OCP.Interface import Interface_Static
 from OCP.Standard import Standard_Failure
 from OCP.STEPCAFControl import STEPCAFControl_Reader
 from OCP.STEPControl import STEPControl_Controller
@@ -40,6 +41,10 @@ def _sequence_values(sequence: Any) -> tuple[str, ...]:
 
 def _transfer_step(path: Path, document: Any) -> tuple[str, ...]:
     STEPControl_Controller.Init_s()
+    # AP242 tessellated geometry (TRIANGULATED_FACE etc.) becomes faces that
+    # carry a triangulation and no surface. OCCT 7.9 reads it by default; set
+    # it explicitly so a different default does not silently drop such files.
+    Interface_Static.SetIVal_s("read.step.tessellated", 1)
     reader = STEPCAFControl_Reader()
     reader.SetNameMode(True)
     reader.SetColorMode(True)

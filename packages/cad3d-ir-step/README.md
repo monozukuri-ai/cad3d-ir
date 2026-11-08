@@ -35,6 +35,12 @@ preview = result.package.visualizations[0]  # preview/<package>.glb
 IgesImporter().import_file(Path("part.igs"), options=ImportOptions(), resources=...)
 ```
 
+AP242 tessellated geometry (`TRIANGULATED_FACE` and friends) is read as faces
+that carry a triangulation and no surface: they appear in the display meshes
+and are counted in the visualization statistics (`tessellated_faces` of
+`faces`, diagnostic `STEP_TESSELLATED_FACES`); there is no B-rep to export for
+them.
+
 The command-line entry point picks the importer from the file content and
 writes `manifest.json` plus geometry resources:
 

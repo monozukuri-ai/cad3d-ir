@@ -116,6 +116,11 @@ class StepExportResult:
     colored_shapes_after: int | None
     source_length_units: tuple[str, ...]
     diagnostics: list[ImportDiagnostic] = field(default_factory=list)
+    faces: int = 0
+    """Faces of the source document's simple shapes."""
+    tessellated_faces: int = 0
+    """Of those, faces without a surface (AP242 tessellated geometry). They are
+    written only when ``schema`` is AP242."""
 
     @property
     def products(self) -> int:
@@ -180,7 +185,16 @@ def _write_document(
     STEPControl_Controller.Init_s()
     _set_static("write.step.schema", _SCHEMA_STATICS[schema])
     _set_static("write.step.unit", _UNIT_STATICS[unit])
-    _set_static("write.step.tessellated", "On" if tessellated else "OnNoBRep")
+    # Only AP242 has tessellated entities: faces without a surface are written
+    # as TRIANGULATED_FACE there and left out of AP203 / AP214 (OCCT would
+    # otherwise put the AP242 entities into those files).
+    if tessellated:
+        mode = "On"
+    elif schema == "AP242":
+        mode = "OnNoBRep"
+    else:
+        mode = "Off"
+    _set_static("write.step.tessellated", mode)
     try:
         with quiet_occt():
             writer = STEPCAFControl_Writer()
@@ -236,6 +250,8 @@ class _LabelStats:
     assemblies: int = 0
     components: int = 0
     colored: int = 0
+    faces: int = 0
+    tessellated_faces: int = 0
 
 
 def _label_stats(document: Any) -> _LabelStats:
@@ -253,6 +269,12 @@ def _label_stats(document: Any) -> _LabelStats:
             stats.components += components.Length()
         elif shape_tool.IsSimpleShape_s(label):
             stats.simple_shapes += 1
+            explorer = TopExp_Explorer(shape_tool.GetShape_s(label), TopAbs_FACE)
+            while explorer.More():
+                stats.faces += 1
+                if BRep_Tool.Surface_s(TopoDS.Face_s(explorer.Current())) is None:
+                    stats.tessellated_faces += 1
+                explorer.Next()
         if color_tool.IsSet(label, XCAFDoc_ColorSurf):
             stats.colored += 1
     return stats
@@ -376,6 +398,37 @@ def export_step(
                 details={"components": copied},
             )
         )
+    if before.tessellated_faces and schema == "AP242":
+        diagnostics.append(
+            ImportDiagnostic(
+                code="STEP_TESSELLATED_WRITTEN",
+                severity="info",
+                action="preserved",
+                message=(
+                    f"{before.tessellated_faces} face(s) have no B-rep surface and "
+                    "were written as AP242 tessellated geometry (TRIANGULATED_FACE)."
+                ),
+                details={"faces": before.tessellated_faces, "all_faces": before.faces},
+            )
+        )
+    elif before.tessellated_faces:
+        diagnostics.append(
+            ImportDiagnostic(
+                code="STEP_TESSELLATED_NOT_WRITTEN",
+                severity="warning",
+                action="skipped",
+                message=(
+                    f"{before.tessellated_faces} face(s) carry only tessellated "
+                    f"geometry, which {schema} cannot represent; they were left out. "
+                    "Write AP242 to keep them."
+                ),
+                details={
+                    "faces": before.tessellated_faces,
+                    "all_faces": before.faces,
+                    "schema": schema,
+                },
+            )
+        )
     pmi = {name: unsupported.get(name, 0) for name in _PMI_COUNTERS}
     if any(pmi.values()):
         diagnostics.append(
@@ -424,6 +477,8 @@ def export_step(
         colored_shapes_after=after,
         source_length_units=source_units,
         diagnostics=diagnostics,
+        faces=before.faces,
+        tessellated_faces=before.tessellated_faces,
     )
 
 

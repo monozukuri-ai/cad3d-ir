@@ -37,6 +37,19 @@
   header. Reported through `PARASOLID_*` diagnostics and statistics; MIT,
   like the core.
 
+### cad3d-ir-step 0.4.2
+
+- `StepImporter` sets `read.step.tessellated` explicitly, so AP242 tessellated
+  geometry (`TRIANGULATED_FACE`) is read whatever the OCCT default is. Faces
+  that carry only tessellation (no surface) are counted in the package
+  visualization's statistics (`faces`, `tessellated_faces`) and reported with
+  `STEP_TESSELLATED_FACES`.
+- `export_step` writes tessellated-only faces only when the schema is AP242
+  (`STEP_TESSELLATED_WRITTEN`). AP203 and AP214 have no tessellated entities;
+  such faces are now left out with `STEP_TESSELLATED_NOT_WRITTEN` instead of
+  being written as AP242 entities inside an AP203 / AP214 file. The result
+  reports `faces` and `tessellated_faces`.
+
 ### cad3d-ir-step 0.4.1
 
 - `write_mesh_step(..., schema="AP242", representation="tessellated")` writes

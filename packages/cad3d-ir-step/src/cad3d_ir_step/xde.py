@@ -124,6 +124,8 @@ class MeshSettings:
 class _MeshOutcome:
     failed_faces: int = 0
     failed_edges: int = 0
+    faces: int = 0
+    tessellated_faces: int = 0
     meshed_definitions: int = 0
     empty_definitions: list[str] = field(default_factory=list)
 
@@ -684,6 +686,8 @@ def map_xde(
             )
             mesh_outcome.failed_faces += shape_mesh.failed_faces
             mesh_outcome.failed_edges += shape_mesh.failed_edges
+            mesh_outcome.faces += shape_mesh.face_count
+            mesh_outcome.tessellated_faces += shape_mesh.tessellated_faces
             if not shape_mesh.faces and not shape_mesh.edges:
                 mesh_outcome.empty_definitions.append(node.definition_name)
             else:
@@ -869,6 +873,8 @@ def map_xde(
                     "vertices": package_builder.vertex_count,
                     "nodes": package_builder.node_count,
                     "meshes": package_builder.mesh_count,
+                    "faces": mesh_outcome.faces,
+                    "tessellated_faces": mesh_outcome.tessellated_faces,
                 },
             )
         )
@@ -887,6 +893,26 @@ def map_xde(
                     details={
                         "failed_faces": mesh_outcome.failed_faces,
                         "failed_edges": mesh_outcome.failed_edges,
+                    },
+                )
+            )
+        if mesh_outcome.tessellated_faces:
+            diagnostics.append(
+                ImportDiagnostic(
+                    code=f"{prefix}_TESSELLATED_FACES",
+                    severity="info",
+                    action="approximated",
+                    message=(
+                        f"{mesh_outcome.tessellated_faces} of {mesh_outcome.faces} "
+                        "faces carry only tessellated geometry (AP242 "
+                        "TRIANGULATED_FACE, no B-rep surface): they are shown as the "
+                        "triangles they contain and have no surface to edit or to "
+                        "write as B-rep."
+                    ),
+                    source_document_id=source.id,
+                    details={
+                        "faces": mesh_outcome.tessellated_faces,
+                        "all_faces": mesh_outcome.faces,
                     },
                 )
             )

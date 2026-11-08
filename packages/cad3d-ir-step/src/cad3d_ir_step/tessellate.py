@@ -70,6 +70,9 @@ class ShapeMesh:
     edge_count: int = 0
     failed_faces: int = 0
     failed_edges: int = 0
+    tessellated_faces: int = 0
+    """Faces without a surface: their triangles came with the file (AP242
+    ``TRIANGULATED_FACE``) rather than from meshing a B-rep face."""
     bounds: Bounds | None = None
 
     @property
@@ -156,6 +159,8 @@ def mesh_shape(
         ):
             result.failed_faces += 1
             continue
+        if BRep_Tool.Surface_s(face) is None:
+            result.tessellated_faces += 1
         if not triangulation.HasNormals():
             BRepLib_ToolTriangulatedShape.ComputeNormals_s(face, triangulation)
         transformation = location.Transformation()

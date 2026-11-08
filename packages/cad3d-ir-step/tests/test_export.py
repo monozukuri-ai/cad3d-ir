@@ -18,6 +18,7 @@ from cad3d_ir_step import (
     StepImporter,
     export_step,
     mesh_to_step,
+    write_mesh_step,
 )
 from cad3d_ir_step.export import bodies_from_scene, source_format_of
 from cad3d_ir_step.export_cli import main as export_main
@@ -190,6 +191,46 @@ def test_export_step_from_iges_in_inches(fixtures_dir: Path, tmp_path: Path) -> 
     bounds = reimported.package.visualizations[0].bounds
     assert bounds is not None
     assert tuple(round(v, 3) for v in bounds.max) == (40.0, 20.0, 12.0)
+
+
+def test_tessellated_step_sources_are_read_and_rewritten_only_as_ap242(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "tessellated.step"
+    written = write_mesh_step(
+        read_glb(_cubes_glb(lines=False)),
+        source,
+        schema="AP242",
+        representation="tessellated",
+    )
+    assert (written.parts, written.tessellated_faces) == (2, 2)
+    # the importer reads the triangles and tells that no face has a surface
+    names, occurrences, _, triangles, result = _reimport(source)
+    assert (names, occurrences, triangles) == (["assembly", "cube-0", "cube-1"], 2, 24)
+    statistics = result.package.visualizations[0].statistics
+    assert (statistics["faces"], statistics["tessellated_faces"]) == (2, 2)
+    tessellated = next(
+        d for d in result.diagnostics if d.code == "STEP_TESSELLATED_FACES"
+    )
+    assert tessellated.details == {"faces": 2, "all_faces": 2}
+    # AP214 has no tessellated entities: the faces are left out, not written
+    # as AP242 entities into an AP214 file
+    ap214 = export_step(source, tmp_path / "ap214.step", schema="AP214")
+    assert (ap214.faces, ap214.tessellated_faces) == (2, 2)
+    text = (tmp_path / "ap214.step").read_text(encoding="utf-8", errors="replace")
+    assert "TRIANGULATED_FACE" not in text and "AUTOMOTIVE_DESIGN" in text
+    dropped = next(
+        d for d in ap214.diagnostics if d.code == "STEP_TESSELLATED_NOT_WRITTEN"
+    )
+    assert dropped.severity == "warning"
+    assert dropped.details == {"faces": 2, "all_faces": 2, "schema": "AP214"}
+    assert _reimport(tmp_path / "ap214.step")[3] == 0
+    # AP242 keeps them
+    ap242 = export_step(source, tmp_path / "ap242.step", schema="AP242")
+    assert {d.code for d in ap242.diagnostics} >= {"STEP_TESSELLATED_WRITTEN"}
+    text = (tmp_path / "ap242.step").read_text(encoding="utf-8", errors="replace")
+    assert "TRIANGULATED_FACE" in text
+    assert _reimport(tmp_path / "ap242.step")[3] == 24
 
 
 def test_export_step_rejects_bad_sources_and_options(
