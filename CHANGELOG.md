@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+### cad3d-ir-sldprt 0.4.0
+
+- Places the assemblies that SOLIDWORKS 2023 and later save with
+  `FaceTessellations` sections (sldkit 0.3.3 returns their directory as
+  `mesh.instances` and tags each table with its owner). Every occurrence with
+  tables becomes an occurrence of the package: a top-level one takes its
+  component's `swTransform`, a repeated one shares the owner's tables, and a
+  nested one composes the sub-assembly transform with the child `swReference`
+  transforms read from `swXmlContents/COMPINSTANCETREE`, root first. Before
+  this the adapter saw no tables in these files and fell back to the preview
+  image.
+- Instances that display the same face tables share one glTF mesh under
+  separate nodes, so a pattern of twenty bolts carries one copy of the bolt.
+  The mesh `extras.id` names the first instance's body.
+- `SLDASM_PLACEMENT_FROM_COMPONENT_TRANSFORMS` and
+  `SLDASM_PLACEMENT_UNRESOLVED` report `source` (`display_lists` or
+  `face_tessellations`); the former also counts the `nested` occurrences it
+  placed. The package metadata and statistics add `placement_source` and
+  `nested_placed_instances`. Nested occurrences are named
+  `<sub>-<m>/<name>-<n>`.
+- The directory keeps the occurrence names from the time the tessellation
+  was saved, so after the components were renamed no name matches the
+  component list. When the directory lists exactly the component tree's part
+  occurrences in order (same count, instance numbers and nesting depth), the
+  unmatched occurrences are placed by that position and
+  `SLDASM_PLACEMENT_BY_TREE_ORDER` (warning, `approximated`) says so;
+  otherwise they stay unplaced as before.
+- An instance without a placement no longer becomes an occurrence with an
+  identity transform drawn beside the root body's copy of the same tables;
+  its tables stay in the root body only (`SLDASM_PLACEMENT_UNRESOLVED`).
+- Requires `sldkit>=0.3.3`.
+
 ### cad3d-ir-icad 0.3.1
 
 - Accepts `cad3d-ir-step` 0.4, which adds the direct mesh writer and leaves

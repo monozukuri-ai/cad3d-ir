@@ -14,7 +14,13 @@ record per component instance ahead of that instance's face tables, and the
 component list carries each instance's `swTransform`; the adapter joins the
 two and emits one glTF node per instance with its transform. On a four-valve
 FESTO manifold this reproduced the STEP export of the same assembly within a
-tenth of a millimetre (see `cad3d_ir_sldprt.assembly`).
+tenth of a millimetre (see `cad3d_ir_sldprt.assembly`). Assemblies saved by
+SOLIDWORKS 2023 and later keep the tables in `FaceTessellations` sections
+instead, one per referenced part, with a directory of occurrences; sldkit
+0.3.3 returns that directory and the adapter places every occurrence from it,
+including repeated parts (which share one glTF mesh) and nested occurrences,
+whose sub-assembly transforms are composed from the component tree the file
+carries.
 
 The result is what SOLIDWORKS showed on screen when the file was saved: every
 visible face at the saved image quality, face outlines as edges, saved face
@@ -70,13 +76,17 @@ cad3d-ir-sldprt bracket.SLDPRT converted/ --diagnostics report.json
   `metadata.preview_resource_id`.
 
 For an assembly the root product is an `assembly`, every component instance
-that the display stream records becomes its own `part` product with a
-configuration and (when it has geometry) a body, and the root configuration
-owns one `Occurrence` per instance with the component transform in package
-millimetres (`visible=False` for hidden components; suppressed components are
-left out). Face tables that cannot be joined to a placed instance, such as
-nested subassemblies, stay at their stored coordinates in a root body and are
-reported.
+that the display stream or the `FaceTessellations` directory records becomes
+its own `part` product with a configuration and (when it has geometry) a
+body, and the root configuration owns one `Occurrence` per instance with the
+component transform in package millimetres (`visible=False` for hidden
+components; suppressed components are left out). Nested occurrences of a
+`FaceTessellations` assembly are named `<sub>-<m>/<name>-<n>` and carry the
+composed transform. Face tables that cannot be joined to a placed instance
+(nested subassemblies of a `DisplayLists` assembly, occurrences missing from
+the component tree, unmatched records) stay at their stored coordinates in a
+root body and are reported. `metadata.placement_source` tells which layout
+the file used.
 
 The GLB has one shared vertex set in millimetres, one TRIANGLES primitive per
 saved colour whose `extras.ranges` list `[pick_id, first_index, index_count]`
@@ -118,7 +128,8 @@ include_preview=True, limit_profile="service")`:
 | `SLDPRT_DISPLAY_STREAM_UNREADABLE` | warning | A display stream could not be decoded; the others are kept. |
 | `SLDPRT_DISPLAY_ENCODING_UNSUPPORTED` | warning | The display stream uses an encoding sldkit does not decode (older `__Zip` streams). |
 | `SLDPRT_VERTEX_BUDGET_EXCEEDED` | warning | The limit profile stopped packing vertices; the mesh is partial. |
-| `SLDASM_PLACEMENT_FROM_COMPONENT_TRANSFORMS` | info | Component instances were placed with the assembly's stored `swTransform` values. |
+| `SLDASM_PLACEMENT_FROM_COMPONENT_TRANSFORMS` | info | Component instances were placed with the assembly's stored `swTransform` values; `details.source` is `display_lists` or `face_tessellations` and `details.nested` counts nested occurrences placed through the component tree. |
+| `SLDASM_PLACEMENT_BY_TREE_ORDER` | warning | `FaceTessellations` occurrences whose saved names match no component (the components were renamed after the display data was saved) were placed by their position in the component tree; only when the directory lists exactly the tree's part occurrences in order. |
 | `SLDASM_PLACEMENT_UNRESOLVED` | warning | Some face tables could not be joined to a placed instance (nested subassemblies, unmatched records); they stay at stored coordinates. |
 | `SLDASM_COMPONENTS_SKIPPED` | info | Hidden and suppressed component instances are left out of the visualization. |
 | `SLDPRT_ASSEMBLY_PLACEMENT_UNVERIFIED` | warning | Only when nothing could be placed: the stored display tables are shown as they are. |
@@ -136,9 +147,15 @@ Other `display.*` diagnostics from sldkit are passed through as
 - Modern-container parts (SOLIDWORKS 2015 and later) and OLE2 parts whose
   display stream uses the `__ZLB` encoding yield meshes. OLE2 parts with the
   older `__Zip` encoding yield the preview image and metadata only.
-- Drawings (`.SLDDRW`) are rejected. Assemblies are placed one level deep:
-  nested subassemblies keep their stored coordinates and are reported, because
-  their instance paths are not in the top-level component list.
+- Drawings (`.SLDDRW`) are rejected. `DisplayLists` assemblies (saved before
+  SOLIDWORKS 2023) are placed one level deep: nested subassemblies keep their
+  stored coordinates and are reported, because their instance paths are not
+  in the top-level component list. `FaceTessellations` assemblies place
+  nested occurrences through `swXmlContents/COMPINSTANCETREE`; an occurrence
+  whose chain is missing there stays at its stored coordinates.
+- Components that the file saved without tables (hidden, suppressed or
+  lightweight at save time) have no geometry here; the sections save no
+  colours, so these assemblies use the default face colour.
 - Configurations are not resolved: the display streams that SOLIDWORKS saved
   are returned, and a document with several mesh-bearing streams is flagged.
 - Colours follow sldkit's saved precedence (body, feature, face); textures

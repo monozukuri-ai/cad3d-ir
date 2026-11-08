@@ -3,11 +3,14 @@
 The frame and table grammar mirror what sldkit's own tests use: a modern
 chunk envelope holding the ``swXmlContents/Features`` header and one
 ``Contents/DisplayLists`` stream with two face tables (a quad with a red face
-colour and an uncoloured triangle).
+colour and an uncoloured triangle). ``face_tessellation_assembly_document``
+builds the SOLIDWORKS 2023+ layout instead: ``FaceTessellations/Directory``
+plus one section stream, and a ``COMPINSTANCETREE`` with nested references.
 """
 
 from __future__ import annotations
 
+import hashlib
 import struct
 import zlib
 
@@ -195,3 +198,169 @@ def assembly_document(
         chunks.append(mfc_string(f"{item['name']}-{item['number']}@{assembly}"))
         chunks.append(face_table(item["points"]))
     return header + modern_frame("Contents/DisplayLists", b"".join(chunks))
+
+
+NO_SECTION = 0xFFFFFFFF
+
+
+def _record_id(path: str) -> bytes:
+    return hashlib.blake2b(path.encode("utf-8"), digest_size=8).digest()
+
+
+def _directory_record(
+    path: str, reference: bytes, ident: bytes, stream: str, section: int, bodies: int
+) -> bytes:
+    out = mfc_string(path) + struct.pack("<I", 100) + bytes(8) + reference + ident
+    out += mfc_string(stream) + struct.pack("<II", section, bodies)
+    for body in range(bodies):
+        out += struct.pack("<III", 101 + body, 80, 6)
+    return out
+
+
+def _face(points: list[tuple[float, float, float]], reference: str) -> bytes:
+    header = struct.pack("<2I", len(points) - 2, 1)
+    trailer = bytes(8) + struct.pack("<I", 1) + bytes(80) + utf16(reference)
+    return header + table(points) + trailer
+
+
+def face_tessellation_assembly_document(
+    instances: list[dict],
+    *,
+    assembly: str = "Frame",
+    subassemblies: list[dict] | None = None,
+) -> bytes:
+    """A SOLIDWORKS 2023-style assembly saved with ``FaceTessellations``.
+
+    ``instances`` are top-level parts with ``name``, ``number``, optional
+    ``transform`` (sixteen tokens), ``hidden``, ``suppressed`` and either
+    ``points`` (one face table; ``None`` for an occurrence without tables) or
+    ``repeat_of`` = ``(name, number)`` of the owner whose tables it repeats.
+    ``subassemblies`` carry ``name``, ``number``, ``transform`` and
+    ``children`` with the same keys; ``omit_reference=True`` leaves a child out
+    of the component tree so its placement cannot be resolved. ``tree_name``
+    renames an item in the component tree only (the directory keeps ``name``),
+    and ``tree_only=True`` lists an item in the component tree but not in the
+    directory.
+    """
+    subassemblies = subassemblies or []
+    files = [f'<swFile id="0" swDocType="ASSEMBLY" swPath="C:\\{assembly}.SLDASM"/>']
+    models: list[str] = []
+    file_ids: dict[str, int] = {}
+
+    def file_id(name: str, kind: str) -> int:
+        if name not in file_ids:
+            file_ids[name] = len(file_ids) + 1
+            files.append(
+                f'<swFile id="{file_ids[name]}" swDocType="{kind}" '
+                f'swPath="C:\\{name}.SLD{"ASM" if kind == "ASSEMBLY" else "PRT"}"/>'
+            )
+        return file_ids[name]
+
+    def reference(item: dict, model_ref: str, sw_id: int) -> str:
+        return (
+            f'<swReference swName="{item.get("tree_name", item["name"])}" '
+            f'swReferenceNumber="{item["number"]}" swID="{sw_id}" '
+            f'swModelRef="{model_ref}" '
+            f'swTransform="{item.get("transform", IDENTITY_TOKENS)}" '
+            f'swSuppressed="{int(bool(item.get("suppressed")))}" '
+            f'swHidden="{int(bool(item.get("hidden")))}"/>'
+        )
+
+    part_models: dict[str, str] = {}
+
+    def part_model(name: str) -> str:
+        if name not in part_models:
+            ref = file_id(name, "PART")
+            part_models[name] = f"m{ref}"
+            models.append(
+                f'<swModel id="m{ref}" swFileRef="{ref}" '
+                'swConfigurationName="Default"/>'
+            )
+        return part_models[name]
+
+    def tree_name(item: dict) -> str:
+        return str(item.get("tree_name", item["name"]))
+
+    sw_id = 100
+    root_references: list[str] = []
+    for item in instances:
+        sw_id += 1
+        root_references.append(reference(item, part_model(tree_name(item)), sw_id))
+    for sub in subassemblies:
+        sw_id += 1
+        sub_model = f"s{file_id(tree_name(sub), 'ASSEMBLY')}"
+        root_references.append(reference(sub, sub_model, sw_id))
+        children = []
+        for child in sub["children"]:
+            if child.get("omit_reference"):
+                continue
+            sw_id += 1
+            children.append(reference(child, part_model(tree_name(child)), sw_id))
+        models.append(
+            f'<swModel id="{sub_model}" '
+            f'swFileRef="{file_id(tree_name(sub), "ASSEMBLY")}" '
+            'swConfigurationName="Default">' + "".join(children) + "</swModel>"
+        )
+    xml = (
+        "<root><swHeader>" + "".join(files) + "</swHeader><swModelList>"
+        '<swModel id="self" swFileRef="0" swConfigurationId="0">'
+        '<swConfiguration swID="0" swName="Default"/>'
+        + "".join(root_references)
+        + "</swModel>"
+        + "".join(models)
+        + "</swModelList></root>"
+    )
+
+    # Directory records in tree order; a sub-assembly node consumes an index.
+    stream_name = "000-000-001"
+    records: list[tuple[int, bytes]] = []
+    sections: list[tuple[bytes, list[bytes]]] = []
+    owner_ids: dict[tuple[str, str, int], bytes] = {}
+    tree_index = 0
+
+    def add(parent: str, prefix: str, item: dict) -> None:
+        nonlocal tree_index
+        if item.get("tree_only"):
+            return
+        tree_index += 1
+        path = f"{prefix}{item['name']}-{item['number']}@{parent}"
+        ident = _record_id(path)
+        points = item.get("points")
+        repeat_of = item.get("repeat_of")
+        if points is not None:
+            owner_ids[(parent, item["name"], item["number"])] = ident
+            section = len(sections)
+            sections.append((ident, [_face(points, "moSimpleSurfIdRep_c,7,1, ")]))
+            record = _directory_record(path, bytes(8), ident, stream_name, section, 1)
+        elif repeat_of is not None:
+            owner = owner_ids[(parent, repeat_of[0], repeat_of[1])]
+            record = _directory_record(path, owner, ident, "", NO_SECTION, 1)
+        else:
+            record = _directory_record(path, bytes(8), ident, "", NO_SECTION, 0)
+        records.append((tree_index, record))
+
+    for item in instances:
+        add(assembly, "", item)
+    for sub in subassemblies:
+        tree_index += 1  # the sub-assembly node itself
+        for child in sub["children"]:
+            add(sub["name"], f"{sub['name']}-{sub['number']}@{assembly}/", child)
+
+    directory = struct.pack("<4I", 2, 1, len(records), records[0][0] if records else 1)
+    for position, (index, record) in enumerate(records):
+        if position:
+            directory += struct.pack("<I", index)
+        directory += record
+    stream = b""
+    for ordinal, (ident, faces) in enumerate(sections):
+        stream += struct.pack("<I", ordinal) + ident + struct.pack("<I", len(faces))
+        stream += b"".join(faces) + struct.pack("<I", 7)
+
+    environment = class_declaration(b"uoTempAssemblySHDData_c") + mfc_string(assembly)
+    return (
+        document_header("ASSEMBLY")
+        + modern_frame("swXmlContents/COMPINSTANCETREE", xml.encode())
+        + modern_frame("Contents/DisplayLists", environment)
+        + modern_frame("FaceTessellations/Directory", directory)
+        + modern_frame(f"FaceTessellations/{stream_name}", stream)
+    )

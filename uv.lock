@@ -155,7 +155,7 @@ dev = [
 
 [[package]]
 name = "cad3d-ir-sldprt"
-version = "0.3.0"
+version = "0.4.0"
 source = { editable = "packages/cad3d-ir-sldprt" }
 dependencies = [
     { name = "cad3d-ir" },
@@ -172,7 +172,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "cad3d-ir", editable = "." },
-    { name = "sldkit", specifier = ">=0.3.0,<0.4" },
+    { name = "sldkit", specifier = ">=0.3.3,<0.4" },
 ]
 
 [package.metadata.requires-dev]
@@ -973,13 +973,14 @@ wheels = [
 
 [[package]]
 name = "sldkit"
-version = "0.3.0"
+version = "0.3.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/56/54/04c0398c0a7e82d4f0639f79c6a9e688e5e463edffdbba63518942cd0f67/sldkit-0.3.0.tar.gz", hash = "sha256:9751dde60a733bd0a51624a5ae5a74158bbf1978bfb5fb44452bd51808b23f5a", size = 1708884, upload-time = "2026-10-23T10:53:25.925Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a1/f9/2f4e7adcdd0fd2b7023b7d1b374d8fa185a08b7516f905fc431d8e24a108/sldkit-0.3.3.tar.gz", hash = "sha256:ae5e5ded1aacb5769f3bde4c8b870340d850e289a7dec90838582cfca4d2d129", size = 1727735, upload-time = "2026-11-08T10:58:06.998Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/1b/658e62fecb51ebfdb99b0fff692e8309aeb4dac5b53402ec2743e1d14f02/sldkit-0.3.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:9bf70abf2cad3684a448e3c3ca50dbe8f78019525f1da47853d881a7115ff691", size = 6375168, upload-time = "2026-10-23T10:53:20.327Z" },
-    { url = "https://files.pythonhosted.org/packages/1d/8f/290c0ba1fd16ab0f747faedcfd01192734d8665b43f034b7d6981b911094/sldkit-0.3.0-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:406f2a2ceac934d5e96fbe5d2a22f3efea84462035b995448f0b7722d615a288", size = 7273915, upload-time = "2026-10-23T10:53:22.314Z" },
-    { url = "https://files.pythonhosted.org/packages/3c/8a/00ede758181c38783270f9a5560c650c54a7ff498b5154fbac187b46bc08/sldkit-0.3.0-cp310-abi3-win_amd64.whl", hash = "sha256:f2d1b653350987daa370157c12c5e721f250abab7f3bd4125a4773cb75157b96", size = 6387455, upload-time = "2026-10-23T10:53:24.442Z" },
+    { url = "https://files.pythonhosted.org/packages/38/a6/2199b9c6f88b9e82a439108b3b52d36185b2d12f9bcf7d4a39a83bd08fce/sldkit-0.3.3-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:054cba61079212ac5253b30f722a2126488b738e4c20ee6bde962ef1401373d9", size = 6419585, upload-time = "2026-11-08T10:57:57.356Z" },
+    { url = "https://files.pythonhosted.org/packages/aa/b6/3dd8e6cc66cec9b756b98ca33d9398663ffb19c5c25e42e1dd41a97e99f8/sldkit-0.3.3-cp310-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:ee18772d259742e862dfb8f399e8b97e28038eedaedb5ff29ce619925e0dc05e", size = 6979505, upload-time = "2026-11-08T10:57:59.848Z" },
+    { url = "https://files.pythonhosted.org/packages/00/f8/7780a8c3a6f3eeafc753c9cf8ab9d46c401fa22f38ae3ef64ab0e7c09e62/sldkit-0.3.3-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:ed7ebe0ca2c8d0cc024222ac1995b38f2d7406c4bf110ddce91abc7a3392c7ea", size = 7299390, upload-time = "2026-11-08T10:58:02.167Z" },
+    { url = "https://files.pythonhosted.org/packages/82/7f/86c42eba70cd8c1481edef4c71220b79193572d3281216196a1148862882/sldkit-0.3.3-cp310-abi3-win_amd64.whl", hash = "sha256:ce76259930fcef7b596794362b789ce3abb0e770a47f82f789cc36e2028de956", size = 6413709, upload-time = "2026-11-08T10:58:04.888Z" },
 ]
 
 [[package]]

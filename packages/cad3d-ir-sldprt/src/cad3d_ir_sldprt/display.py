@@ -310,14 +310,21 @@ def build_assembly_glb(
             )
 
     material_for(None, None)
+    # Instances that display the same face tables (repeated occurrences of a
+    # FaceTessellations assembly) share one glTF mesh under separate nodes.
+    shared: dict[tuple[int, ...], int] = {}
     for instance, product_id, occurrence_id, body_id in items:
-        parts = [(index + 1, mesh.parts[index]) for index in instance.part_indices]
-        if not parts:
+        key = tuple(instance.part_indices)
+        if not key:
             continue
-        glb_mesh = builder.add_mesh(
-            instance.label, extras={"id": body_id, "product": product_id}
-        )
-        add_group(glb_mesh, parts)
+        glb_mesh = shared.get(key)
+        if glb_mesh is None:
+            parts = [(index + 1, mesh.parts[index]) for index in key]
+            glb_mesh = builder.add_mesh(
+                instance.label, extras={"id": body_id, "product": product_id}
+            )
+            add_group(glb_mesh, parts)
+            shared[key] = glb_mesh
         builder.add_node(
             instance.label,
             mesh=glb_mesh,

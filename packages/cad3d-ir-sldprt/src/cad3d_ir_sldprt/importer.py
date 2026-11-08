@@ -62,7 +62,7 @@ from cad3d_ir_sldprt.errors import (
 from cad3d_ir_sldprt.preview import PreviewImage, preview_image
 
 ADAPTER_NAME = "cad3d-ir-sldprt"
-ADAPTER_VERSION = "0.3.0"
+ADAPTER_VERSION = "0.4.0"
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 _MAX_PROPERTIES = 200
@@ -98,7 +98,12 @@ _DISPLAY_DIAGNOSTICS: dict[str, tuple[str, str, str]] = {
     ),
 }
 _HANDLED_DISPLAY_CODES = frozenset(
-    {"display.no_display_data", "display.document_kind_unsupported"}
+    {
+        "display.no_display_data",
+        "display.document_kind_unsupported",
+        # The directory summary is covered by the SLDASM_PLACEMENT_* diagnostics.
+        "display.face_tessellations_directory",
+    }
 )
 
 
@@ -386,6 +391,11 @@ def _assembly_items(
 ) -> list[_AssemblyItem]:
     items: list[_AssemblyItem] = []
     for index, instance in enumerate(layout.instances, start=1):
+        # An instance without a placement is not an occurrence: its tables stay
+        # in the root body (``layout.unplaced_parts``) instead of being drawn
+        # twice. Hidden and suppressed instances keep their occurrence record.
+        if not (instance.placed or instance.hidden or instance.suppressed):
+            continue
         suffix = f"{slug(instance.record.name)}-{instance.record.number}-{key}-{index}"
         items.append(
             _AssemblyItem(
@@ -424,6 +434,12 @@ def _assembly_diagnostics(
         return diagnostics
     placed = len(layout.placed_instances)
     if placed:
+        nested_note = (
+            f", {layout.nested_placed} of them nested occurrences placed through "
+            "the component tree"
+            if layout.nested_placed
+            else ""
+        )
         diagnostics.append(
             ImportDiagnostic(
                 code="SLDASM_PLACEMENT_FROM_COMPONENT_TRANSFORMS",
@@ -431,10 +447,31 @@ def _assembly_diagnostics(
                 action="preserved",
                 message=(
                     f"{placed} component instances were placed with the assembly's "
-                    "stored component transforms (swTransform)."
+                    f"stored component transforms (swTransform){nested_note}."
                 ),
                 source_document_id=source_id,
-                details={"instances": placed, "components": layout.components},
+                details={
+                    "instances": placed,
+                    "components": layout.components,
+                    "nested": layout.nested_placed,
+                    "source": layout.source,
+                },
+            )
+        )
+    if layout.order_placed:
+        diagnostics.append(
+            ImportDiagnostic(
+                code="SLDASM_PLACEMENT_BY_TREE_ORDER",
+                severity="warning",
+                action="approximated",
+                message=(
+                    f"{layout.order_placed} component instances kept names in the "
+                    "display data that match no component (the components were "
+                    "renamed after the display data was saved); they were placed by "
+                    "their position in the component tree."
+                ),
+                source_document_id=source_id,
+                details={"instances": layout.order_placed},
             )
         )
     unplaced = layout.unplaced_parts
@@ -454,6 +491,7 @@ def _assembly_diagnostics(
                     "tables": len(unplaced),
                     "nested_records": layout.nested_records,
                     "unassigned_tables": len(layout.unassigned_parts),
+                    "source": layout.source,
                 },
             )
         )
@@ -1058,6 +1096,8 @@ def _map_source(
         metadata["assembly_name"] = layout.assembly_name
         metadata["placed_instances"] = len(layout.placed_instances)
         metadata["unplaced_parts"] = len(layout.unplaced_parts)
+        metadata["placement_source"] = layout.source
+        metadata["nested_placed_instances"] = layout.nested_placed
 
     package = CadPackage(
         format="cad3d-ir",
@@ -1098,6 +1138,7 @@ def _map_source(
         "occurrences": len(occurrences),
         "instances": len(assembly_items),
         "placed_instances": 0 if layout is None else len(layout.placed_instances),
+        "nested_placed_instances": 0 if layout is None else layout.nested_placed,
         "unplaced_parts": 0 if layout is None else len(layout.unplaced_parts),
         "hidden_instances": sum(1 for item in assembly_items if item.instance.hidden),
         "suppressed_instances": sum(
