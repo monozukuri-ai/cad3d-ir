@@ -65,7 +65,14 @@ own B-Rep becomes exact OCCT bodies (metres to millimetres, faces that cannot
 be built are dropped and reported), placed by the assembly instances the file
 stores, coloured and named from the system attributes, written as the same
 GLB layout and, through `export_step`, as a STEP assembly. It is MIT licensed
-like the core.
+like the core. The `cad3d-ir-inventor` member reads Autodesk Inventor parts
+(`.ipt`) through
+[inventor-kit](https://github.com/monozukuri-ai/inventor-kit): the bodies of
+the B-Rep table the part stores become exact OCCT solids, written as the same
+GLB layout and, through `export_step`, as a STEP assembly; stored B-spline
+fits stand in for procedural geometry and are reported. It follows
+inventor-kit's licensing (PolyForm Noncommercial) and needs Python 3.11 or
+later.
 
 ## Visualization meshes
 
@@ -148,6 +155,10 @@ uv run --package cad3d-ir-edrawings cad3d-ir-edrawings frame.easm output/
 # Parasolid adapter
 uv run --package cad3d-ir-parasolid pytest packages/cad3d-ir-parasolid/tests
 uv run --package cad3d-ir-parasolid cad3d-ir-parasolid part.x_t output/ --step part.step
+
+# Inventor adapter (Python 3.11 or later)
+uv run --package cad3d-ir-inventor pytest packages/cad3d-ir-inventor/tests
+uv run --package cad3d-ir-inventor cad3d-ir-inventor part.ipt output/ --step part.step
 ```
 
 ## Minimal use
@@ -183,9 +194,10 @@ and abstraction gate are described in
 
 `cad3d-ir`, `cad3d-ir-step`, `cad3d-ir-edrawings` and `cad3d-ir-parasolid`
 are MIT licensed.
-`packages/cad3d-ir-sldprt`
-and `packages/cad3d-ir-icad` are licensed separately under the PolyForm
-Noncommercial License 1.0.0 by UnRobotics Inc., following sldkit and icadkit;
-see [the SOLIDWORKS adapter's LICENSE](packages/cad3d-ir-sldprt/LICENSE) and
-[the iCAD adapter's LICENSE](packages/cad3d-ir-icad/LICENSE) for the notices
-and commercial contact.
+`packages/cad3d-ir-sldprt`, `packages/cad3d-ir-icad` and
+`packages/cad3d-ir-inventor` are licensed separately under the PolyForm
+Noncommercial License 1.0.0 by UnRobotics Inc., following sldkit, icadkit and
+inventor-kit; see [the SOLIDWORKS adapter's LICENSE](packages/cad3d-ir-sldprt/LICENSE),
+[the iCAD adapter's LICENSE](packages/cad3d-ir-icad/LICENSE) and
+[the Inventor adapter's LICENSE](packages/cad3d-ir-inventor/LICENSE) for the
+notices and commercial contact.

@@ -75,7 +75,7 @@ from cad3d_ir_parasolid.shapes import (
 )
 
 ADAPTER_NAME = "cad3d-ir-parasolid"
-ADAPTER_VERSION = "0.3.1"
+ADAPTER_VERSION = "0.3.2"
 SOURCE_FORMAT = "x_t"
 BREP_MEDIA_TYPE = "application/vnd.opencascade.brep"
 BREP_ENCODING = "occt-brep-ascii-v1"

@@ -30,7 +30,7 @@ from cad3d_ir_step.export import (
 from cad3d_ir_step.iges import IgesHeader, IgesImporter, inspect_iges_header
 from cad3d_ir_step.importer import StepImporter
 
-__version__ = "0.4.2"
+__version__ = "0.4.3"
 
 __all__ = [
     "DEFAULT_MAX_TRIANGLES",

@@ -2,6 +2,48 @@
 
 ## Unreleased
 
+### cad3d-ir-inventor 0.1.0 (new)
+
+- New workspace member `packages/cad3d-ir-inventor`: an importer for Autodesk
+  Inventor parts (`.ipt`) through `inventor-kit[occt]>=0.10`. The B-Rep table
+  the part stores is converted to exact OCCT bodies in millimetres
+  (`convert_bodies(backend="occt")`, without CadQuery), each body becomes one
+  `Body` and one glTF node of the usual GLB layout, and `export_step` writes
+  the same solids as a flat STEP assembly named `Body_<index>`.
+- The package says what was read: the segment major, save version and the
+  Inventor release derived from the major, the iProperties inventor-kit names,
+  and the stored preview image as a `preview-image` resource (written also
+  when no body converts).
+- Diagnostics separate the outcomes: bodies on geometry that is not converted
+  (`INVENTOR_BODY_UNSUPPORTED`, by geometry subtype), bodies whose faces do
+  not close a volume (`INVENTOR_BODY_SHEET`), failed bodies
+  (`INVENTOR_BODY_FAILED`), stored B-spline fits standing in for procedural
+  curves and surfaces (`INVENTOR_APPROXIMATED_GEOMETRY`, with the largest fit
+  tolerance; the `brep` representation of such a body is `approximate`), a
+  save generation read as a candidate (`INVENTOR_PROFILE_CANDIDATE`) and one
+  outside those inventor-kit reads (`INVENTOR_SEGMENT_MAJOR_UNSUPPORTED`).
+  The stored table is shown as it is (`INVENTOR_STATE_UNVERIFIED`), and
+  appearances are not read (`INVENTOR_APPEARANCE_NOT_READ`).
+- Assemblies, drawings and presentations are reported
+  (`INVENTOR_KIND_UNSUPPORTED`), not converted.
+- PolyForm Noncommercial 1.0.0, following inventor-kit. inventor-kit needs
+  Python 3.11 or later; on Python 3.10 the package installs without it and
+  reading raises `InventorImportError`.
+
+### cad3d-ir-step 0.4.3
+
+- New module `cad3d_ir_step.shapes`: the helpers that turn exact body shapes
+  into the adapters' glTF binary (`GlbNode`, `GlbResult`, `build_glb`), bounds
+  and matrix helpers, `location_from_matrix`, `face_pick_ids` and
+  `brep_bytes`. They moved here from `cad3d_ir_parasolid.shapes` unchanged so
+  that adapters of other exact B-Rep formats share them.
+
+### cad3d-ir-parasolid 0.3.2
+
+- `cad3d_ir_parasolid.shapes` re-exports the helpers from
+  `cad3d_ir_step.shapes`; the names and behaviour are unchanged. Requires
+  `cad3d-ir-step>=0.4.3`.
+
 ### cad3d-ir-sldprt 0.4.0
 
 - Places the assemblies that SOLIDWORKS 2023 and later save with

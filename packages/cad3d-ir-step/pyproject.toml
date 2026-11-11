@@ -1,6 +1,6 @@
 [project]
 name = "cad3d-ir-step"
-version = "0.4.2"
+version = "0.4.3"
 description = "STEP and IGES importers and a STEP writer for cad3d-ir through Open CASCADE XDE"
 readme = "README.md"
 license = "MIT"

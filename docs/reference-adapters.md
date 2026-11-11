@@ -126,6 +126,43 @@ The authored test models under `packages/cad3d-ir-icad/tests/data` were built
 with icadkit's own fixture builders (a saved box, an external reference, a 2D
 sheet); no iCAD-produced file is committed.
 
+## Inventor parts through inventor-kit stored bodies
+
+`packages/cad3d-ir-inventor` maps one Autodesk Inventor part (`.ipt`) to the
+IR through [inventor-kit](https://github.com/monozukuri-ai/inventor-kit):
+
+- The file becomes one `part` `ProductDefinition` with one `Configuration`
+  named `Stored state`. A part has no occurrences. The source document's
+  properties carry the segment major, the save version, the Inventor release
+  derived from the major and the iProperties inventor-kit names.
+- Geometry comes from `InventorDocument.convert_bodies(backend="occt")`: one
+  OCCT solid per body of the stored B-Rep table, in millimetres, without
+  CadQuery. Each converted body is one `Body` (`Body_<index>`), one glTF mesh
+  and one node, built with `cad3d_ir_step.shapes.build_glb`. `include_brep`
+  writes one OCCT BREP resource per body; it is `approximate` when stored
+  B-spline fits stand in for procedural curves or surfaces
+  (`INVENTOR_APPROXIMATED_GEOMETRY` gives their counts and the largest fit
+  tolerance) and `exact` otherwise.
+- Bodies that do not convert stay out of the package and are counted by
+  outcome: geometry the converter does not build (`INVENTOR_BODY_UNSUPPORTED`,
+  by geometry subtype), faces that do not close a volume
+  (`INVENTOR_BODY_SHEET`) and failures (`INVENTOR_BODY_FAILED`).
+- The stored table is mapped as it is. That it is the model state Inventor
+  shows is not established (`INVENTOR_STATE_UNVERIFIED`,
+  `properties.state_verified`); appearances are not read
+  (`INVENTOR_APPEARANCE_NOT_READ`).
+- A save generation outside those inventor-kit reads fails closed
+  (`INVENTOR_SEGMENT_MAJOR_UNSUPPORTED`); one it frames like its verified
+  neighbours is read with `INVENTOR_PROFILE_CANDIDATE`. Assemblies, drawings
+  and presentations are reported (`INVENTOR_KIND_UNSUPPORTED`).
+- The preview image the document stores is written as a `preview-image`
+  resource whether or not a body converts, so a caller can fall back to it.
+- `export_step` writes the converted solids as a flat STEP assembly, using the
+  STEP adapter's writer.
+
+The test parts under `packages/cad3d-ir-inventor/tests/data` were authored
+with inventor-kit's part writer; no file produced by Inventor is committed.
+
 ## First abstraction fixture
 
 The repository-owned AP242 fixture contains a root assembly, a base plate, and
