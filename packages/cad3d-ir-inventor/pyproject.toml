@@ -1,6 +1,6 @@
 [project]
 name = "cad3d-ir-inventor"
-version = "0.1.0"
+version = "0.1.1"
 description = "Autodesk Inventor part (IPT) importer for cad3d-ir through inventor-kit's stored B-Rep"
 readme = "README.md"
 license = "PolyForm-Noncommercial-1.0.0"
@@ -37,7 +37,7 @@ dependencies = [
     # stored B-spline fits with a warning, the candidate profile of segment
     # major 22. inventor-kit needs Python 3.11 or later; on Python 3.10 this
     # package installs without it and reading raises InventorImportError.
-    "inventor-kit[occt]>=0.10,<0.11; python_version >= '3.11'",
+    "inventor-kit[occt]>=0.11,<0.12; python_version >= '3.11'",
 ]
 
 [project.urls]
