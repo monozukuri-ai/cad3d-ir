@@ -93,3 +93,42 @@ def test_wireframe_iges_imports_with_its_edges(tmp_path: Path) -> None:
     assert bounds is not None
     assert bounds.max[0] == pytest.approx(60.0, abs=1e-3)
     assert bounds.max[1] == pytest.approx(35.0, abs=0.1)
+
+
+def _perforated_plate(holes: int) -> object:
+    """A 5 mm plate, 210 x 170, with a 20-column grid of 4 mm holes."""
+    from OCP.BRepBuilderAPI import (
+        BRepBuilderAPI_MakeFace,
+        BRepBuilderAPI_MakePolygon,
+        BRepBuilderAPI_MakeWire,
+    )
+    from OCP.BRepPrimAPI import BRepPrimAPI_MakePrism
+    from OCP.gp import gp_Pln, gp_Vec
+    from OCP.TopoDS import TopoDS
+
+    outer = BRepBuilderAPI_MakePolygon(
+        gp_Pnt(0, 0, 0), gp_Pnt(210, 0, 0), gp_Pnt(210, 170, 0), gp_Pnt(0, 170, 0), True
+    ).Wire()
+    face = BRepBuilderAPI_MakeFace(gp_Pln(), outer, True)
+    for index in range(holes):
+        centre = gp_Pnt(10 + 10 * (index % 20), 10 + 10 * (index // 20), 0)
+        circle = gp_Circ(gp_Ax2(centre, gp_Dir(0, 0, 1)), 2.0)
+        edge = BRepBuilderAPI_MakeEdge(circle).Edge()
+        face.Add(TopoDS.Wire_s(BRepBuilderAPI_MakeWire(edge).Wire().Reversed()))
+    return BRepPrimAPI_MakePrism(face.Face(), gp_Vec(0, 0, 5)).Shape()
+
+
+def test_faces_with_many_holes_are_premeshed_and_kept() -> None:
+    from OCP.IMeshTools import IMeshTools_Parameters
+
+    from cad3d_ir_step.tessellate import HEAVY_FACE_WIRES, _premesh_heavy_faces
+
+    parameters = IMeshTools_Parameters()
+    parameters.Deflection, parameters.Angle = 0.5, 0.3
+    # Top and bottom carry more wires than the threshold; the walls do not.
+    assert _premesh_heavy_faces(_perforated_plate(HEAVY_FACE_WIRES), parameters) == 2
+    assert _premesh_heavy_faces(_perforated_plate(10), parameters) == 0
+    plate = _perforated_plate(HEAVY_FACE_WIRES)
+    mesh = mesh_shape(plate, linear_deflection=0.5, angular_deflection=0.3)
+    assert mesh.face_count == HEAVY_FACE_WIRES + 6 and mesh.failed_faces == 0
+    assert mesh.failed_edges == 0 and mesh.triangle_count > 0

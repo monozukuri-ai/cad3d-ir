@@ -22,12 +22,12 @@ from OCP.BRepLib import BRepLib_ToolTriangulatedShape
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
 from OCP.GCPnts import GCPnts_TangentialDeflection
 from OCP.gp import gp_TrsfForm
-from OCP.IMeshTools import IMeshTools_Parameters
+from OCP.IMeshTools import IMeshTools_MeshAlgoType, IMeshTools_Parameters
 from OCP.Precision import Precision
 from OCP.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_REVERSED
 from OCP.TopExp import TopExp
 from OCP.TopLoc import TopLoc_Location
-from OCP.TopoDS import TopoDS
+from OCP.TopoDS import TopoDS, TopoDS_Iterator
 from OCP.TopTools import (
     TopTools_IndexedDataMapOfShapeListOfShape,
     TopTools_IndexedMapOfShape,
@@ -119,6 +119,44 @@ def linear_deflection_for(
     return max(floor, diagonal * ratio)
 
 
+# A face with more wires than this is meshed first with the Delabella base
+# algorithm. The default Delaunay base indexes the circumcircles of its triangles
+# in a grid sized by the smallest boundary segments, so a large face with thousands
+# of small holes took minutes and several gigabytes; Delabella makes the same
+# number of triangles in seconds and a fraction of the memory.
+HEAVY_FACE_WIRES = 256
+
+
+def _premesh_heavy_faces(shape: Any, parameters: Any) -> int:
+    """Mesh the faces with many wires with Delabella; return how many there were.
+
+    The regular pass that follows keeps such a face's triangulation (it is as
+    fine as asked) and reuses the polygons of its edges for the faces next to it.
+    """
+    faces = TopTools_IndexedMapOfShape()
+    TopExp.MapShapes_s(shape, TopAbs_FACE, faces)
+    heavy = []
+    for index in range(1, faces.Extent() + 1):
+        face = faces.FindKey(index)
+        wires, children = 0, TopoDS_Iterator(face)
+        while children.More() and wires <= HEAVY_FACE_WIRES:
+            wires += 1
+            children.Next()
+        if wires > HEAVY_FACE_WIRES:
+            heavy.append(face)
+    if not heavy:
+        return 0
+    delabella = IMeshTools_Parameters()
+    delabella.Deflection = parameters.Deflection
+    delabella.Angle = parameters.Angle
+    delabella.AdjustMinSize = parameters.AdjustMinSize
+    delabella.InParallel = parameters.InParallel
+    delabella.MeshAlgo = IMeshTools_MeshAlgoType.IMeshTools_MeshAlgoType_Delabella
+    for face in heavy:
+        BRepMesh_IncrementalMesh(face, delabella)
+    return len(heavy)
+
+
 def mesh_shape(
     shape: Any,
     *,
@@ -138,6 +176,7 @@ def mesh_shape(
     parameters.Angle = float(angular_deflection)
     parameters.AdjustMinSize = True
     parameters.InParallel = bool(parallel)
+    _premesh_heavy_faces(shape, parameters)
     BRepMesh_IncrementalMesh(shape, parameters)
 
     result = ShapeMesh()

@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### cad3d-ir-step 0.4.4
+
+- `mesh_shape` meshes a face with more than 256 wires (`HEAVY_FACE_WIRES`)
+  with OCCT's Delabella base algorithm before the regular pass, which keeps
+  that triangulation and reuses the polygons of its edges for the faces next
+  to it. The default Delaunay base indexes the circumcircles of its triangles
+  in a grid sized by the smallest boundary segments, so a large face with
+  thousands of small holes took minutes and several gigabytes to mesh;
+  Delabella makes the same number of triangles in seconds. Other faces mesh
+  as before. Every adapter that builds its GLB with `mesh_shape` (STEP, IGES,
+  iCAD SX, Parasolid, Inventor) gains it.
+
 ### cad3d-ir-inventor 0.1.0 (new)
 
 - New workspace member `packages/cad3d-ir-inventor`: an importer for Autodesk
