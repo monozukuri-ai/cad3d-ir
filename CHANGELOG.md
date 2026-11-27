@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### cad3d-ir-edrawings 0.3.1
+
+- Mapping a part with many bodies is no longer quadratic. The colour of a
+  body in a placement was found by searching the placement's members from
+  the start, once per body and per placement of the part, so the time grew
+  with the square of the number of bodies and a part with tens of thousands
+  of them spent most of the import there. Each placement now keeps a table
+  from body to colour. The package and the GLB are the same as before,
+  apart from the adapter version they record.
+
 ### cad3d-ir-step 0.4.4
 
 - `mesh_shape` meshes a face with more than 256 wires (`HEAVY_FACE_WIRES`)

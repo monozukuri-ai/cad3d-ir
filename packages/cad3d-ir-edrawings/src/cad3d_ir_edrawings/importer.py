@@ -73,7 +73,7 @@ from cad3d_ir_edrawings.errors import (
 from cad3d_ir_edrawings.preview import PreviewImage, preview_image
 
 ADAPTER_NAME = "cad3d-ir-edrawings"
-ADAPTER_VERSION = "0.3.0"
+ADAPTER_VERSION = "0.3.1"
 DEFAULT_SCALE_MM_PER_UNIT = 1000.0
 """SOLIDWORKS writers store metres and omit ``model_units``."""
 
@@ -400,6 +400,13 @@ class _Placement:
     path: str
     values: tuple[float, ...]
     members: list[_Member] = field(default_factory=list)
+    # Body -> colour of the first member that shows it, for ``color_of``. It is
+    # brought up to date from ``members`` (which only grows) on a lookup, so a
+    # placement with thousands of bodies is not searched once per body.
+    _colors: dict[int, ColorRGBA | None] = field(
+        default_factory=dict, init=False, repr=False, compare=False
+    )
+    _indexed: int = field(default=0, init=False, repr=False, compare=False)
 
     @property
     def bodies(self) -> tuple[int, ...]:
@@ -410,10 +417,13 @@ class _Placement:
         return any(member.visible for member in self.members)
 
     def color_of(self, body: int) -> ColorRGBA | None:
-        for member in self.members:
-            if member.body == body:
-                return member.color
-        return None
+        """The colour of the first member that shows ``body``; ``None`` when no
+        member shows it or that member has no colour."""
+        if self._indexed != len(self.members):
+            for member in self.members[self._indexed :]:
+                self._colors.setdefault(member.body, member.color)
+            self._indexed = len(self.members)
+        return self._colors.get(body)
 
 
 @dataclass(slots=True)

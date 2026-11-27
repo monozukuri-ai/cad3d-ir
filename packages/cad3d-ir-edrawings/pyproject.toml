@@ -1,6 +1,6 @@
 [project]
 name = "cad3d-ir-edrawings"
-version = "0.3.0"
+version = "0.3.1"
 description = "eDrawings (EPRT/EASM) importer for cad3d-ir through edrawings-kit's display bundles"
 readme = "README.md"
 license = "MIT"

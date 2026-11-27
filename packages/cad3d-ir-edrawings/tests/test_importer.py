@@ -17,7 +17,7 @@ from cad3d_ir_edrawings import (
     UnsupportedIRVersionError,
     sniff,
 )
-from cad3d_ir_edrawings.importer import limits_for, product_name
+from cad3d_ir_edrawings.importer import _Member, _Placement, limits_for, product_name
 from tests.synthetic import (
     configurations_hsf,
     empty_hsf,
@@ -361,3 +361,42 @@ def test_product_names_and_limit_profiles() -> None:
     assert limits_for("desktop").max_hsf_vertices == 10_000_000
     with pytest.raises(ValueError, match="unknown limit profile"):
         limits_for("huge")
+
+
+def test_placement_colour_lookup_keeps_the_first_member_of_a_body() -> None:
+    red, blue = (1.0, 0.0, 0.0, 1.0), (0.0, 0.0, 1.0, 1.0)
+    placement = _Placement(index=0, name="part-1", path="", values=())
+    for instance, (body, colour) in enumerate(
+        [(7, red), (7, blue), (9, None), (9, blue)]
+    ):
+        placement.members.append(
+            _Member(instance=instance, body=body, color=colour, visible=True)
+        )
+    assert placement.color_of(7) == red
+    assert placement.color_of(9) is None  # the first member of body 9 has none
+    assert placement.color_of(8) is None  # not shown by this placement
+    # A member added after a lookup is found too.
+    placement.members.append(_Member(instance=4, body=8, color=blue, visible=True))
+    assert placement.color_of(8) == blue
+    assert placement.bodies == (7, 9, 8)
+
+
+def test_placement_colour_lookup_does_not_search_members_per_body() -> None:
+    class Counted(list):
+        passes = 0
+
+        def __iter__(self):
+            Counted.passes += 1
+            return super().__iter__()
+
+    count = 2_000
+    colours = [(0.0, 0.0, body / count, 1.0) for body in range(count)]
+    members = Counted(
+        _Member(instance=body, body=body, color=colours[body], visible=True)
+        for body in range(count)
+    )
+    placement = _Placement(index=0, name="part-1", path="", values=(), members=members)
+    Counted.passes = 0
+    assert [placement.color_of(body) for body in range(count)] == colours
+    # One pass over the members at most, however many bodies are looked up.
+    assert Counted.passes <= 1
